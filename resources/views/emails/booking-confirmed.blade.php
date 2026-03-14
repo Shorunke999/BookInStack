@@ -293,7 +293,7 @@
 
   {{-- ── Header ─────────────────────────────────────────── --}}
   <div class="email-header">
-    <div class="email-logo">Book<span>Stack</span></div>
+    <div class="email-logo">BookStack<span>In</span></div>
     <div class="email-mode-pill">
       @if($modeConfig['mode'] === 'ticket') 🎟 Ticket
       @elseif($modeConfig['mode'] === 'reservation') 🏨 Reservation

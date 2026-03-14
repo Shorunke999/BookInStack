@@ -299,7 +299,7 @@
 <!-- ── Left brand panel ──────────────────────────────────────────────────── -->
 <div class="auth-left">
     <div class="auth-left-inner">
-        <a href="{{ url('/') }}" class="auth-logo">Book<span>Stack</span></a>
+        <a href="{{ url('/') }}" class="auth-logo">BookStack<span>In</span></a>
 
         <div class="auth-tagline">
             <h2>Get paid for every<br /><span>booking you take</span></h2>

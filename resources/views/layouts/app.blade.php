@@ -557,7 +557,7 @@
 
     <div class="sidebar-brand">
         <div>
-            <div class="logo">Book<span>Stack</span></div>
+            <div class="logo">BookStack<span>In</span></div>
             <div class="logo-sub">Developer Console</div>
         </div>
         {{-- Close button shown only on mobile --}}

@@ -534,7 +534,7 @@
 
 <!-- Nav -->
 <nav>
-    <a href="/" class="nav-logo">Book<span>Stack</span></a>
+    <a href="/" class="nav-logo">BookStack<span>In</span></a>
     <div class="nav-links">
         <a href="#features" class="nav-link">Features</a>
         <a href="#pricing" class="nav-link">Pricing</a>
@@ -712,7 +712,7 @@
 
 <!-- Footer -->
 <footer>
-    <div class="logo">Book<span>Stack</span></div>
+    <div class="logo">BookStack<span>In</span></div>
     <p>© {{ date('Y') }} BookStackIn. Built for Nigerian developers.</p>
 </footer>
 
