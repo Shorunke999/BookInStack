@@ -1,22 +1,21 @@
 #!/usr/bin/env bash
-set -e
+echo "Running composer"
+composer install --no-dev --working-dir=/var/www/html
 
-echo "==> Installing dependencies"
-composer install --no-dev --no-interaction --prefer-dist --working-dir=/var/www/html
-
-echo "==> Generating app key if missing"
-php artisan key:generate --no-interaction --force
-
-echo "==> Running migrations"
-php artisan migrate --force          # NEVER migrate:fresh — that wipes your data
-
-echo "==> Clearing and caching"
+echo "Optimize app"
 php artisan optimize:clear
+
+echo "Caching config..."
 php artisan config:cache
+
+echo "Caching routes..."
 php artisan route:cache
-php artisan view:cache
 
-echo "==> Linking storage"
-php artisan storage:link --force
+#echo "Running migrations..."
+php artisan migrate:fresh --force
 
-echo "==> Done"
+#echo "Seeding to db..."
+#php artisan db:seed --class=DatabaseSeeder --force
+
+#echo "Linking storage to public..."
+#php artisan storage:link
