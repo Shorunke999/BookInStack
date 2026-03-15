@@ -4,7 +4,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\Dashboard\BookingCategoryController;
 use App\Http\Controllers\Dashboard\DashboardController;
-use App\Http\Controllers\Dashboard\NINController;
+use App\Http\Controllers\Dashboard\NinController;
 use App\Http\Controllers\Dashboard\StaffController;
 use Illuminate\Support\Facades\Route;
 
@@ -59,7 +59,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/booking-settings', [DashboardController::class, 'bookingSettings'])->name('dashboard.booking-settings');
         Route::post('/booking-settings/save', [DashboardController::class, 'saveBookingSettings'])->name('dashboard.booking-settings.save');
         Route::post('/api-keys/regenerate', [DashboardController::class, 'regenerateKey'])->name('api-keys.regenerate');
-       Route::post('/nin/verify', [NINController::class, 'verify'])->name('nin.verify');
+       Route::post('/nin/verify', [NinController::class, 'verify'])->name('nin.verify');
 
 
         // Categories — CRUD lives within the settings page (same URL, different action)

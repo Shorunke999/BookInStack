@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
-class NINController extends Controller
+class NController extends Controller
 {
     public function __construct(
         private NINVerificationService $ninService,
