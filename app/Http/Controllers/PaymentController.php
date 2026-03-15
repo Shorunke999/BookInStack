@@ -37,7 +37,7 @@ class PaymentController extends Controller
         try {
             $transaction = $this->paystack->initializeTransaction([
                 'customer_email' => $booking->customer_email,
-                'amount' => (int) $booking->amount,
+                'amount' => (int) $booking->amount * 100,
                 'reference' => 'PAY-'.$booking->reference.'-'.time(),
                 'booking_id' => $booking->id,
                 'developer_id' => $developer->id,

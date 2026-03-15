@@ -81,7 +81,7 @@ class Booking extends Model
 
     public function amountInNaira(): float
     {
-        return $this->amount / 100;
+        return $this->amount;
     }
 
     public function markAsPaid(string $paystackReference): void
