@@ -219,6 +219,7 @@ class BookingController extends Controller
             'reason'       => $reason,
             'booking_mode' => $mode,
             'catalog'      => $catalog,
+            'widget_config'    => $developer->widget_config ?? (object)[],
         ]);
     }
 

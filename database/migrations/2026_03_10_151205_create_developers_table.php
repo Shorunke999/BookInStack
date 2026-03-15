@@ -22,6 +22,8 @@ return new class extends Migration
             $table->string('nin', 11)->unique()->nullable();
             $table->boolean('nin_verified')->default(false);
 
+           $table->enum('booking_mode', ['appointment', 'ticket', 'reservation'])
+                ->default('appointment');
             $table->boolean('enable_booking_window')->default(false);
             $table->json('booking_window')->nullable();
 
@@ -36,8 +38,11 @@ return new class extends Migration
             $table->string('account_number', 20)->nullable();
 
             $table->enum('status', ['pending', 'active', 'suspended'])->default('pending');
+            $table->enum('reservation_unit', ['night', 'day'])->default('night');
+            $table->json('widget_config')->nullable();
 
             $table->string('remember_token', 100)->nullable();
+            $table->timestamp('email_verified_at')->nullable();
             $table->timestamps();
         });
     }

@@ -76,6 +76,49 @@
         </div>
     </div>
 
+    {{-- ── Reservation Unit (only shown when mode = reservation) ───────────────── --}}
+    <div class="card" id="reservation-unit-card" style="
+        border-radius:0; border-top:none; border-bottom:none;
+        {{ $developer->booking_mode !== 'reservation' ? 'display:none;' : '' }}
+    ">
+        <h3 style="margin-bottom:6px; font-size:14px;">Reservation Unit</h3>
+        <p style="font-size:13px; color:var(--muted); margin-bottom:14px; line-height:1.5;">
+            Controls the pricing label and date labels in your widget and dashboard.
+        </p>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <label id="unit-night" onclick="selectUnit('night')" style="
+                display:flex; align-items:center; gap:10px; padding:12px 14px;
+                border-radius:9px; cursor:pointer; transition:all .15s;
+                border:2px solid {{ ($developer->reservation_unit ?? 'night') === 'night' ? 'var(--accent)' : 'var(--border)' }};
+                background:{{ ($developer->reservation_unit ?? 'night') === 'night' ? 'var(--accent-light)' : '#fafafa' }};
+            ">
+                <input type="radio" name="reservation_unit" value="night"
+                       {{ ($developer->reservation_unit ?? 'night') === 'night' ? 'checked' : '' }}
+                       style="display:none;" />
+                <span style="font-size:20px;">🌙</span>
+                <div>
+                    <div style="font-weight:700; font-size:13px;">Night</div>
+                    <div style="font-size:11px; color:var(--muted);">Hotels, lodges, short stays</div>
+                </div>
+            </label>
+            <label id="unit-day" onclick="selectUnit('day')" style="
+                display:flex; align-items:center; gap:10px; padding:12px 14px;
+                border-radius:9px; cursor:pointer; transition:all .15s;
+                border:2px solid {{ ($developer->reservation_unit ?? 'night') === 'day' ? 'var(--accent)' : 'var(--border)' }};
+                background:{{ ($developer->reservation_unit ?? 'night') === 'day' ? 'var(--accent-light)' : '#fafafa' }};
+            ">
+                <input type="radio" name="reservation_unit" value="day"
+                       {{ ($developer->reservation_unit ?? 'night') === 'day' ? 'checked' : '' }}
+                       style="display:none;" />
+                <span style="font-size:20px;">☀️</span>
+                <div>
+                    <div style="font-weight:700; font-size:13px;">Day</div>
+                    <div style="font-size:11px; color:var(--muted);">Event centres, halls, venues</div>
+                </div>
+            </label>
+        </div>
+    </div>
+
     {{-- ── Booking Window ───────────────────────────────────────────────────── --}}
     <div class="card" style="border-radius:0; border-top:none; border-bottom:none;">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
@@ -314,6 +357,32 @@
         document.getElementById('sum-amount').textContent = c.amount;
         document.getElementById('sum-desc').textContent   = c.desc;
         document.getElementById('sum-attend').textContent = c.attend;
+
+        // Show/hide reservation unit card
+        const unitCard = document.getElementById('reservation-unit-card');
+        if (unitCard) unitCard.style.display = value === 'reservation' ? 'block' : 'none';
+
+        // Update amount label based on current unit if reservation
+        if (value === 'reservation') updateUnitSummary();
+    }
+
+    function selectUnit(value) {
+        ['night','day'].forEach(u => {
+            const label = document.getElementById('unit-' + u);
+            const sel   = u === value;
+            label.style.borderColor = sel ? 'var(--accent)' : 'var(--border)';
+            label.style.background  = sel ? 'var(--accent-light)' : '#fafafa';
+            label.querySelector('input').checked = sel;
+        });
+        updateUnitSummary();
+    }
+
+    function updateUnitSummary() {
+        const isDay = document.querySelector('input[name="reservation_unit"]:checked')?.value === 'day';
+        document.getElementById('sum-amount').textContent = isDay ? 'Rate per Day' : 'Rate per Night';
+        document.getElementById('sum-cta').textContent    = isDay ? 'Book Now'     : 'Reserve Now';
+        document.getElementById('sum-attend').textContent = isDay ? 'Event Done'   : 'Checked Out';
+        document.getElementById('sum-desc').textContent   = isDay ? 'Hall / Space' : 'Room / Space';
     }
 
     function toggleDay(day, checked) {
@@ -370,7 +439,230 @@
         const wrap = document.getElementById('child-price-wrap' + suffix);
         if (wrap) wrap.style.display = checkbox.checked ? 'block' : 'none';
     }
+
+    // ── Widget CMS ────────────────────────────────────────────────────────────
+    function setBgType(type) {
+        document.querySelectorAll('[data-bg-type]').forEach(el => {
+            const active = el.dataset.bgType === type;
+            el.style.borderColor = active ? 'var(--accent)' : 'var(--border)';
+            el.style.background  = active ? 'var(--accent-light)' : '#fafafa';
+        });
+        document.getElementById('wc-bg-type').value = type;
+        document.getElementById('wc-color-row').style.display  = type === 'color' ? 'block' : 'none';
+        document.getElementById('wc-image-row').style.display  = type === 'image' ? 'block' : 'none';
+        updatePreview();
+    }
+
+    function updatePreview() {
+        const type    = document.getElementById('wc-bg-type').value;
+        const color   = document.getElementById('wc-bg-color').value;
+        const imgUrl  = document.getElementById('wc-bg-image').value.trim();
+        const accent  = document.getElementById('wc-accent').value;
+        const radius  = document.getElementById('wc-radius').value;
+        const preview = document.getElementById('widget-preview-box');
+
+        preview.style.borderRadius = radius + 'px';
+        preview.style.background   = type === 'color' ? color
+                                   : type === 'image' && imgUrl ? `url(${imgUrl}) center/cover no-repeat` : '#fff';
+
+        document.getElementById('preview-btn').style.background    = accent;
+        document.getElementById('preview-accent').style.background = accent;
+        document.getElementById('preview-accent').style.color      = accent;
+    }
 </script>
 @endpush
+
+{{-- ══════════════════════════════════════════════════════════════════════════
+     SECTION 3 — WIDGET APPEARANCE
+══════════════════════════════════════════════════════════════════════════ --}}
+@php
+    $wc = $developer->widget_config ?? [];
+    $wcBgType  = $wc['bg_type']      ?? 'none';
+    $wcBgColor = $wc['bg_color']     ?? '#f5f3ff';
+    $wcBgImage = $wc['bg_image_url'] ?? '';
+    $wcAccent  = $wc['accent_color'] ?? '#4f46e5';
+    $wcRadius  = $wc['border_radius'] ?? 14;
+    $wcBranding = $wc['show_branding'] ?? true;
+@endphp
+
+<div style="margin-top:24px;">
+    <div style="margin-bottom:14px;">
+        <h3 style="margin:0; font-size:15px;">Widget Appearance</h3>
+        <p style="font-size:13px; color:var(--muted); margin-top:3px;">
+            Customize how your booking widget looks on your website.
+        </p>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 340px; gap:20px; align-items:start;">
+
+        {{-- Controls --}}
+        <form method="POST" action="{{ route('dashboard.widget-appearance.save') }}">
+            @csrf
+
+            {{-- Background type --}}
+            <div class="card" style="margin-bottom:16px;">
+                <h4 style="font-size:13px; font-weight:700; margin-bottom:12px;">Background</h4>
+
+                <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px;">
+                    @foreach([
+                        'none'  => ['icon'=>'⬜', 'label'=>'White'],
+                        'color' => ['icon'=>'🎨', 'label'=>'Color'],
+                        'image' => ['icon'=>'🖼',  'label'=>'Image'],
+                    ] as $type => $opt)
+                        <div data-bg-type="{{ $type }}"
+                             onclick="setBgType('{{ $type }}')"
+                             style="
+                                 padding:12px 8px; border-radius:9px; cursor:pointer;
+                                 text-align:center; transition:all .15s;
+                                 border:2px solid {{ $wcBgType === $type ? 'var(--accent)' : 'var(--border)' }};
+                                 background:{{ $wcBgType === $type ? 'var(--accent-light)' : '#fafafa' }};
+                             ">
+                            <div style="font-size:20px; margin-bottom:4px;">{{ $opt['icon'] }}</div>
+                            <div style="font-size:12px; font-weight:600;">{{ $opt['label'] }}</div>
+                        </div>
+                    @endforeach
+                </div>
+
+                <input type="hidden" id="wc-bg-type" name="bg_type" value="{{ $wcBgType }}" />
+
+                <div id="wc-color-row" style="{{ $wcBgType === 'color' ? '' : 'display:none;' }}">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label style="font-size:12px;">Background Color</label>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <input type="color" id="wc-bg-color" name="bg_color"
+                                   value="{{ $wcBgColor }}"
+                                   oninput="updatePreview()"
+                                   style="width:44px; height:36px; border:1px solid var(--border); border-radius:7px; cursor:pointer; padding:2px;" />
+                            <input type="text" value="{{ $wcBgColor }}"
+                                   style="width:90px; font-family:monospace; font-size:13px;"
+                                   class="form-control"
+                                   oninput="document.getElementById('wc-bg-color').value=this.value; updatePreview()" />
+                        </div>
+                    </div>
+                </div>
+
+                <div id="wc-image-row" style="{{ $wcBgImage ? '' : 'display:none;' }} {{ $wcBgType === 'image' ? '' : 'display:none;' }}">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label style="font-size:12px;">Image URL</label>
+                        <input type="url" id="wc-bg-image" name="bg_image_url"
+                               value="{{ $wcBgImage }}"
+                               class="form-control" style="font-size:13px;"
+                               placeholder="https://yoursite.com/bg.jpg"
+                               oninput="updatePreview()" />
+                        <div style="font-size:11px; color:var(--muted); margin-top:4px;">
+                            Use a publicly accessible URL. Recommended: 800×600px or larger.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Accent color + radius --}}
+            <div class="card" style="margin-bottom:16px;">
+                <h4 style="font-size:13px; font-weight:700; margin-bottom:14px;">Colors & Shape</h4>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label style="font-size:12px;">Accent Color <span style="color:var(--muted); font-weight:400;">(button, highlights)</span></label>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <input type="color" id="wc-accent" name="accent_color"
+                                   value="{{ $wcAccent }}"
+                                   oninput="updatePreview()"
+                                   style="width:44px; height:36px; border:1px solid var(--border); border-radius:7px; cursor:pointer; padding:2px;" />
+                            <input type="text" value="{{ $wcAccent }}"
+                                   style="width:90px; font-family:monospace; font-size:13px;"
+                                   class="form-control"
+                                   oninput="document.getElementById('wc-accent').value=this.value; updatePreview()" />
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label style="font-size:12px;">Corner Radius <span style="color:var(--muted); font-weight:400;">(px)</span></label>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <input type="range" id="wc-radius" name="border_radius"
+                                   min="0" max="28" value="{{ $wcRadius }}"
+                                   oninput="document.getElementById('radius-val').textContent=this.value+'px'; updatePreview()"
+                                   style="flex:1;" />
+                            <span id="radius-val" style="font-size:13px; font-weight:600; min-width:32px;">{{ $wcRadius }}px</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Branding --}}
+            <div class="card" style="margin-bottom:16px;">
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                    <input type="hidden" name="show_branding" value="0" />
+                    <input type="checkbox" name="show_branding" value="1"
+                           {{ $wcBranding ? 'checked' : '' }}
+                           style="width:15px; height:15px; accent-color:var(--accent); cursor:pointer;" />
+                    <div>
+                        <div style="font-size:13px; font-weight:600;">Show "Powered by BookStack"</div>
+                        <div style="font-size:12px; color:var(--muted);">Displayed at the bottom of your widget.</div>
+                    </div>
+                </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-sm">Save Appearance</button>
+        </form>
+
+        {{-- Live Preview --}}
+        <div>
+            <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; margin-bottom:10px;">
+                Live Preview
+            </div>
+            <div id="widget-preview-box" style="
+                border-radius:{{ $wcRadius }}px;
+                background:{{ $wcBgType === 'color' ? $wcBgColor : ($wcBgType === 'image' && $wcBgImage ? 'url('.$wcBgImage.') center/cover no-repeat' : '#fff') }};
+                border:1px solid var(--border);
+                padding:20px;
+                box-shadow:0 2px 12px rgba(0,0,0,.06);
+            ">
+                {{-- Mini widget mockup --}}
+                <div style="font-size:15px; font-weight:700; margin-bottom:14px; color:#111;">
+                    {{ $modeConfig['cta'] }}
+                    <span id="preview-accent" style="
+                        font-size:11px; font-weight:700; margin-left:6px;
+                        background:transparent; color:{{ $wcAccent }};
+                        border:1px solid {{ $wcAccent }}; padding:2px 8px; border-radius:20px;
+                    ">{{ $modeConfig['label'] }}</span>
+                </div>
+
+                <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
+                    @foreach($categories->take(3) as $cat)
+                        <div style="
+                            padding:10px 12px; border:2px solid var(--border); border-radius:8px;
+                            background:rgba(255,255,255,.8); font-size:13px;
+                        ">
+                            <div style="font-weight:600;">{{ $cat->name }}</div>
+                            <div style="font-size:12px; color:{{ $wcAccent }}; font-weight:600;">{{ $cat->formattedPrice() }}</div>
+                        </div>
+                    @endforeach
+                    @if($categories->isEmpty())
+                        <div style="padding:10px 12px; border:2px solid var(--border); border-radius:8px; background:rgba(255,255,255,.8); font-size:13px;">
+                            <div style="font-weight:600;">Sample Category</div>
+                            <div style="font-size:12px; color:{{ $wcAccent }}; font-weight:600;">₦5,000</div>
+                        </div>
+                    @endif
+                </div>
+
+                <div style="height:36px; background:#f3f4f6; border-radius:7px; margin-bottom:8px;"></div>
+                <div style="height:36px; background:#f3f4f6; border-radius:7px; margin-bottom:14px;"></div>
+
+                <button id="preview-btn" style="
+                    width:100%; padding:11px; background:{{ $wcAccent }};
+                    color:#fff; border:none; border-radius:8px;
+                    font-size:14px; font-weight:700; cursor:default;
+                ">{{ $modeConfig['cta'] }}</button>
+
+                @if($wcBranding)
+                    <div style="text-align:center; margin-top:10px; font-size:11px; color:#9ca3af;">
+                        Powered by BookStack
+                    </div>
+                @endif
+            </div>
+        </div>
+
+    </div>
+</div>
 
 @endsection

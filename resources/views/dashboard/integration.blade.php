@@ -5,7 +5,10 @@
 @section('content')
 
 <div style="max-width:800px; display:flex; flex-direction:column; gap:20px;">
-
+    <a href="/sdk/test.html" target="_blank" class="nav-item">
+    @include('components.icon', ['name' => 'code'])
+    SDK Console ↗
+</a>
     {{-- ── 1. Include ──────────────────────────────────────────────────── --}}
     <div class="card">
         <h3>1. Include the SDK</h3>
@@ -271,10 +274,7 @@ window.<span class="fn">addEventListener</span>(<span class="str">'BookStackIn:b
         </div>
     </div>
     @endif
-    <a href="/sdk/test.html" target="_blank" class="nav-item">
-    @include('components.icon', ['name' => 'code'])
-    SDK Console ↗
-</a>
+    
 </div>
 
 @endsection

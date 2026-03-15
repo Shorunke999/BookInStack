@@ -1,5 +1,5 @@
 /**
- * BookStack SDK — booking.js
+ * BookInStack SDK — booking.js
  * Version: 1.1.0
  *
  * Supports three booking modes: appointment | ticket | reservation
@@ -25,7 +25,7 @@
   // ─── Configuration ────────────────────────────────────────────────────────────
 
   const DEFAULT_CONFIG = {
-    baseUrl:   'https://api.bookstack.dev/api',
+    baseUrl:   'https://api.bookinstack.dev/api',
     version:   '1.1.0',
     timeout:   30000,
     returnUrl: null,
@@ -39,6 +39,8 @@
   let _bookingOpen   = true;
   let _bookingReason = null;
   let _catalog       = [];   // BookingCategory[] from API
+  let _widgetConfig      = {};   // appearance from developer's CMS settings
+  let _reservationUnit   = 'night'; // 'night' | 'day'
 
   // ─── Mode defaults (fallback when API is unreachable) ─────────────────────────
 
@@ -125,7 +127,7 @@
         throw new BookStackError('SDK not initialized. Call Booking.init({ publicKey }) first.', 'NOT_INITIALIZED');
       }
       const url     = `${_config.baseUrl}${path}`;
-      console.log('[BookStack] fetching:', url, '| baseUrl:', _config.baseUrl);
+      console.log('[BookInStack] fetching:', url, '| baseUrl:', _config.baseUrl);
       const headers = {
         'Content-Type':  'application/json',
         'Authorization': `Bearer ${_config.publicKey}`,
@@ -178,6 +180,7 @@
       style.id    = 'bookstack-styles';
       style.textContent = `
         .bks-widget {
+          --bks-accent: #4f46e5;
           font-family: 'DM Sans','Segoe UI',system-ui,sans-serif;
           max-width: 420px; background: #fff;
           border: 1px solid #e5e7eb; border-radius: 14px;
@@ -190,15 +193,15 @@
         .bks-header h3 { margin:0; font-size:18px; font-weight:700; color:#111827; flex:1; }
         .bks-mode-badge {
           font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
-          background:#eef2ff; color:#4f46e5; padding:3px 9px; border-radius:20px;
+          background:rgba(79,70,229,.1); color:var(--bks-accent); padding:3px 9px; border-radius:20px;
         }
 
         /* Price display — always category-driven, never a free-form input */
         .bks-price-display {
           margin: 4px 0 14px;
           padding: 14px 16px;
-          background: #f5f3ff;
-          border: 1px solid #ddd6fe;
+          background:rgba(79,70,229,.05);
+          border:1px solid rgba(79,70,229,.2);
           border-radius: 10px;
         }
         .bks-price-main {
@@ -261,7 +264,7 @@
           transition:border-color .15s, box-shadow .15s; font-family:inherit; background:#fff;
         }
         .bks-field input:focus, .bks-field select:focus {
-          border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,.1);
+          border-color:var(--bks-accent); box-shadow:0 0 0 3px rgba(79,70,229,.1);
         }
         .bks-field input[readonly] { background:#f9fafb; color:#6b7280; }
 
@@ -274,9 +277,9 @@
           cursor:pointer; transition:background .15s, transform .1s, box-shadow .15s;
           font-family:inherit; letter-spacing:-.01em;
         }
-        .bks-btn:hover { background:#4338ca; box-shadow:0 4px 14px rgba(79,70,229,.3); }
+        .bks-btn:hover { background:var(--bks-accent); box-shadow:0 4px 14px rgba(79,70,229,.3); }
         .bks-btn:active { transform:scale(.98); }
-        .bks-btn:disabled { background:#a5b4fc; cursor:not-allowed; box-shadow:none; }
+        .bks-btn:disabled { background:rgba(79,70,229,.4); cursor:not-allowed; box-shadow:none; }
 
         /* Error */
         .bks-error {
@@ -308,9 +311,9 @@
           cursor:pointer; transition:all .15s;
         }
         .bks-cat-card:hover   { border-color:#a5b4fc; background:#fafafe; }
-        .bks-cat-card.selected { border-color:#4f46e5; background:#eef2ff; }
+        .bks-cat-card.selected { border-color:var(--bks-accent); background:rgba(79,70,229,.06); }
         .bks-cat-name  { font-weight:700; font-size:14px; color:#111827; }
-        .bks-cat-price { font-size:13px; color:#4f46e5; font-weight:600; margin-top:2px; }
+        .bks-cat-price { font-size:13px; color:var(--bks-accent); font-weight:600; margin-top:2px; }
         .bks-cat-desc  { font-size:12px; color:#6b7280; margin-top:3px; }
         .bks-cat-meta  { font-size:11px; color:#9ca3af; margin-top:3px; }
 
@@ -340,7 +343,7 @@
       this.injectStyles();
 
       const container = typeof selector === 'string' ? document.querySelector(selector) : selector;
-      if (!container) { console.error(`[BookStack] Widget container not found: ${selector}`); return; }
+      if (!container) { console.error(`[BookInStack] Widget container not found: ${selector}`); return; }
 
       const mode    = _modeConfig || MODE_DEFAULTS.appointment;
       const catalog = _catalog    || [];
@@ -350,6 +353,19 @@
       container.innerHTML = '';
       const wrap = document.createElement('div');
       wrap.className = 'bks-widget';
+
+      // ── Apply developer CMS appearance ────────────────────────────────────────
+      const wc     = _widgetConfig || {};
+      const accent = wc.accent_color  || '#4f46e5';
+      if (wc.border_radius !== undefined) wrap.style.borderRadius = wc.border_radius + 'px';
+      if (wc.bg_type === 'color' && wc.bg_color) {
+        wrap.style.background = wc.bg_color;
+      } else if (wc.bg_type === 'image' && wc.bg_image_url) {
+        wrap.style.backgroundImage    = `url(${wc.bg_image_url})`;
+        wrap.style.backgroundSize     = 'cover';
+        wrap.style.backgroundPosition = 'center';
+      }
+      wrap.style.setProperty('--bks-accent', accent);
 
       // ── Closed / no-catalog states ────────────────────────────────────────────
       if (!_bookingOpen) {
@@ -361,7 +377,7 @@
               ${_bookingReason || 'Bookings are not currently available.'}
             </div>
           </div>
-          <div class="bks-powered">Powered by <a href="https://bookstack.dev" target="_blank">BookStack</a></div>`;
+          <div class="bks-powered">Powered by <a href="https://bookinstack.dev" target="_blank">BookInStack</a></div>`;
         container.appendChild(wrap);
         return;
       }
@@ -375,7 +391,7 @@
               No booking types have been configured yet.
             </div>
           </div>
-          <div class="bks-powered">Powered by <a href="https://bookstack.dev" target="_blank">BookStack</a></div>`;
+          <div class="bks-powered">Powered by <a href="https://bookinstack.dev" target="_blank">BookInStack</a></div>`;
         container.appendChild(wrap);
         return;
       }
@@ -408,7 +424,7 @@
           const n  = (ci && co) ? utils.nightsBetween(ci.value, co.value) : 1;
           display.innerHTML = `
             <span class="bks-price-main">${utils.formatAmount(selectedCat.price * n)}</span>
-            <span class="bks-price-sub">${utils.formatAmount(selectedCat.price)} × ${n} night${n !== 1 ? 's' : ''}</span>`;
+            <span class="bks-price-sub">${utils.formatAmount(selectedCat.price)} × ${n} ${_reservationUnit === 'day' ? 'day' : 'night'}${n !== 1 ? 's' : ''}</span>`;
         } else if (mode.mode === 'ticket') {
           const adultPrice = selectedCat.price;
           const childPrice = selectedCat.enable_child_pricing
@@ -539,15 +555,15 @@
         extrasHTML = `
           <div class="bks-date-row">
             <div class="bks-field" style="margin-bottom:0;">
-              <label>Check-in</label>
+              <label>${_reservationUnit === 'day' ? 'Start Date' : 'Check-in'}</label>
               <input type="date" id="bks-checkin" min="${today}" value="${today}" />
             </div>
             <div class="bks-field" style="margin-bottom:0;">
-              <label>Check-out</label>
+              <label>${_reservationUnit === 'day' ? 'End Date' : 'Check-out'}</label>
               <input type="date" id="bks-checkout" min="${tomorrow}" value="${tomorrow}" />
             </div>
           </div>
-          <div class="bks-nights-badge" id="bks-nights">🌙 1 night</div>`;
+          <div class="bks-nights-badge" id="bks-nights">${_reservationUnit === 'day' ? '☀️' : '🌙'} 1 ${_reservationUnit}</div>`;
       }
 
       if (mode.mode === 'appointment') {
@@ -585,7 +601,7 @@
           <span>⚠</span><span id="bks-err-msg"></span>
         </div>
         <button class="bks-btn" id="bks-submit">${mode.cta}</button>
-        <div class="bks-powered">Powered by <a href="https://bookstack.dev" target="_blank">BookStack</a></div>
+        <div class="bks-powered">Powered by <a href="https://bookinstack.dev" target="_blank">BookInStack</a></div>
       `;
 
       container.appendChild(wrap);
@@ -663,7 +679,7 @@
           });
         } catch (err) {
           showError(err.message || 'Something went wrong. Please try again.');
-          console.error('[BookStack]', err);
+          console.error('[BookInStack]', err);
         } finally {
           setLoading(false);
         }
@@ -688,7 +704,7 @@
       _config      = utils.merge({ ...DEFAULT_CONFIG }, options);
       _initialized = true;
 
-      console.info(`[BookStack] SDK v${DEFAULT_CONFIG.version} initialized.`);
+      console.info(`[BookInStack] SDK v${DEFAULT_CONFIG.version} initialized.`);
 
       // Fetch mode from API — always resolve against MODE_DEFAULTS
       // so the JS shape (description_label, supports_quantity etc) is guaranteed correct
@@ -696,15 +712,18 @@
         const status    = await request.get('/booking-window/status');
         const modeKey   = status.booking_mode || 'appointment';
         _modeConfig     = MODE_DEFAULTS[modeKey] || MODE_DEFAULTS.appointment;
-        _catalog        = status.catalog || [];
+        _catalog        = status.catalog       || [];
+        _widgetConfig   = status.widget_config || {};
         _bookingOpen    = status.open !== false;
         _bookingReason  = status.reason || null;
-        console.info(`[BookStack] Mode: ${modeKey}, catalog: ${_catalog.length} items, window open: ${_bookingOpen}`);
+        console.info(`[BookInStack] Mode: ${modeKey}, catalog: ${_catalog.length} items, window open: ${_bookingOpen}`);
         utils.emit('ready', { version: DEFAULT_CONFIG.version, mode: modeKey, open: _bookingOpen, catalog: _catalog });
       } catch (err) {
-        console.warn('[BookStack] Could not fetch mode config, defaulting to appointment.', err?.message);
+        console.warn('[BookInStack] Could not fetch mode config, defaulting to appointment.', err?.message);
         _modeConfig    = MODE_DEFAULTS.appointment;
         _catalog       = [];
+        _widgetConfig    = {};
+        _reservationUnit = 'night';
         _bookingOpen   = true;
         _bookingReason = null;
         utils.emit('ready', { version: DEFAULT_CONFIG.version, mode: 'appointment', open: true, catalog: [] });
@@ -794,6 +813,8 @@
 
     get modeConfig()    { return _modeConfig; },
     get catalog()       { return _catalog; },
+    get widgetConfig()      { return _widgetConfig; },
+    get reservationUnit()   { return _reservationUnit; },
     get bookingOpen()   { return _bookingOpen; },
     get bookingReason() { return _bookingReason; },
     utils,

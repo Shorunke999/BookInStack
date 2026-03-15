@@ -14,6 +14,7 @@ return new class extends Migration
             $table->foreignId('developer_id')->constrained()->cascadeOnDelete();
             $table->decimal('amount', 12, 2); // in kobo (smallest unit)
             $table->string('description');
+            $table->unsignedSmallInteger('quantity')->default(1);
             $table->string('customer_email');
             $table->string('customer_name')->nullable();
             $table->string('customer_phone', 20)->nullable();
@@ -30,11 +31,17 @@ return new class extends Migration
             $table->boolean('attended')->default(false);
             $table->timestamp('attended_at')->nullable();
             $table->text('attendance_note')->nullable();
+            $table->date('check_in')->nullable();
+            $table->date('check_out')->nullable();
+            $table->date('preferred_date')->nullable();
+            $table->time('preferred_time')->nullable();
             $table->timestamps();
 
             $table->index(['developer_id', 'status']);
             $table->index(['developer_id', 'created_at']);
             $table->index('paystack_reference');
+
+            
         });
     }
 

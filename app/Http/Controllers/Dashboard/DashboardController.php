@@ -185,13 +185,15 @@ class DashboardController extends Controller
         $request->validate([
             'booking_mode' => 'required|in:appointment,ticket,reservation',
             'enable_booking_window' => 'boolean',
+             'reservation_unit'      => 'nullable|in:night,day',
             'window_days'           => 'nullable|array',
             'window_days.*'         => 'in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
             'open_time'             => 'nullable|date_format:H:i',
             'close_time'            => 'nullable|date_format:H:i|after:open_time',
         ]);
-        $developer->update(['booking_mode' => $request->booking_mode]);
         $developer->update([
+            'booking_mode' => $request->booking_mode,
+            'reservation_unit'      => $request->input('reservation_unit', 'night'),
             'enable_booking_window' => $request->boolean('enable_booking_window'),
             'booking_window' => [
                 'days'       => $request->input('window_days', []),
@@ -204,6 +206,35 @@ class DashboardController extends Controller
         return back()->with('success', 'Booking Settings saved.');
     }
 
+    
+    // ─── Widget Appearance ────────────────────────────────────────────────────────
+ 
+    public function saveWidgetAppearance(Request $request): RedirectResponse
+    {
+        $developer = $this->effectiveDeveloper($request);
+ 
+        $request->validate([
+            'bg_type'       => 'required|in:none,color,image',
+            'bg_color'      => 'nullable|string|max:20',
+            'bg_image_url'  => 'nullable|url|max:500',
+            'accent_color'  => 'nullable|string|max:20',
+            'border_radius' => 'nullable|integer|min:0|max:28',
+            'show_branding' => 'boolean',
+        ]);
+ 
+        $developer->update([
+            'widget_config' => [
+                'bg_type'       => $request->input('bg_type', 'none'),
+                'bg_color'      => $request->input('bg_color',     '#f5f3ff'),
+                'bg_image_url'  => $request->input('bg_image_url', ''),
+                'accent_color'  => $request->input('accent_color', '#4f46e5'),
+                'border_radius' => (int) $request->input('border_radius', 14),
+                'show_branding' => $request->boolean('show_branding'),
+            ],
+        ]);
+ 
+        return back()->with('success', 'Widget appearance saved.');
+    }
     // ─── Staff ───────────────────────────────────────────────────────────────────
 
     public function staff(Request $request): View

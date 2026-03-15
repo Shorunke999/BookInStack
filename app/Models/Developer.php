@@ -40,7 +40,8 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
         'booking_mode',
         'max_per_order',
 
-        'email_verified_at'
+        'email_verified_at',
+         'widget_config',
 
     ];
 
@@ -57,6 +58,7 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
         'enable_booking_window' => 'boolean',
         'booking_window' => 'array',
         'email_verified_at' => 'datetime',
+         'widget_config'=> 'array'
     ];
 
     // ─── Relationships ──────────────────────────────────────────────────────────
