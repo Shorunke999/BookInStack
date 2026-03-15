@@ -14,6 +14,7 @@ class Booking extends Model
         'reference',
         'booking_mode',
         'developer_id',
+        'category_id',
         'amount',
         'description',
         'customer_email',

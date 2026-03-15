@@ -22,7 +22,8 @@ return new class extends Migration
 
             $table->enum('status', ['pending', 'paid', 'failed', 'cancelled', 'refunded'])
                 ->default('pending');
-
+            $table->enum('booking_mode', ['appointment', 'ticket', 'reservation'])
+                ->default('appointment');
             $table->string('paystack_reference')->nullable();
             $table->string('paystack_access_code')->nullable();
             $table->string('payment_url')->nullable();

@@ -96,7 +96,7 @@
 
   const utils = {
     formatAmount(kobo) {
-      return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(kobo / 100);
+      return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(kobo);
     },
     isValidEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); },
     isValidAmount(amount) { return Number.isInteger(amount) && amount >= 100; },
@@ -472,7 +472,7 @@
           co.min   = co.value;
         }
         const n = utils.nightsBetween(ci.value, co.value);
-        if (badge) badge.textContent = `🌙 ${n} night${n !== 1 ? 's' : ''}`;
+        if (badge) badge.textContent = `🌙 ${n} ${_reservationUnit} ${n !== 1 ? 's' : ''}`;
         refreshPriceDisplay();
       };
 
@@ -714,6 +714,7 @@
         _modeConfig     = MODE_DEFAULTS[modeKey] || MODE_DEFAULTS.appointment;
         _catalog        = status.catalog       || [];
         _widgetConfig   = status.widget_config || {};
+        _reservationUnit = status.reservation_unit || 'night';
         _bookingOpen    = status.open !== false;
         _bookingReason  = status.reason || null;
         console.info(`[BookInStack] Mode: ${modeKey}, catalog: ${_catalog.length} items, window open: ${_bookingOpen}`);

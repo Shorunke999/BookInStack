@@ -56,7 +56,6 @@ class BookingController extends Controller
             $category = \App\Models\BookingCategory::where('id', $data['category_id'])
                 ->where('developer_id', $developer->id)
                 ->where('booking_mode', $mode)
-                ->where('status', 'active')
                 ->first();
 
             if (!$category) {
@@ -77,6 +76,26 @@ class BookingController extends Controller
         }
         if (!$description) {
             return response()->json(['message' => 'description is required when no category is set.'], 422);
+        }
+        if ($mode === 'reservation' && $category) {
+            $requested_in  = \Carbon\Carbon::parse($data['check_in']);
+            $requested_out = \Carbon\Carbon::parse($data['check_out']);
+
+            // Count paid/pending bookings for this category that overlap the requested dates
+            $overlapping = \App\Models\Booking::where('category_id', $category->id)
+                ->whereIn('status', 'paid')
+                ->where(function ($q) use ($requested_in, $requested_out) {
+                    // Overlap condition: existing booking starts before new end AND ends after new start
+                    $q->where('check_in',  '<', $requested_out)
+                    ->where('check_out', '>', $requested_in);
+                })
+                ->count();
+            if ($category->total_slots !== null && $overlapping >= $category->total_slots) {
+                return response()->json([
+                    'message' => "Sorry, {$category->name} is fully booked for your selected dates. Please choose different dates or another option.",
+                    'error'   => 'DATES_UNAVAILABLE',
+                ], 422);
+            }
         }
 
         // ── Create booking ─────────────────────────────────────────────────────
@@ -105,7 +124,6 @@ class BookingController extends Controller
             $payload['preferred_date'] = $data['preferred_date'] ?? null;
             $payload['preferred_time'] = $data['preferred_time'] ?? null;
         }
-    Log::info('Creating booking with payload: ', $payload);
         $booking = Booking::create($payload);
 
         return response()->json([
@@ -220,6 +238,7 @@ class BookingController extends Controller
             'booking_mode' => $mode,
             'catalog'      => $catalog,
             'widget_config'    => $developer->widget_config ?? (object)[],
+            'reservation_unit' => $developer->reservation_unit ?? null
         ]);
     }
 

@@ -21,6 +21,7 @@ class BookingCategory extends Model
         'max_per_order',
         'sort_order',
         'status',
+        'total_slots'
     ];
 
     protected $casts = [

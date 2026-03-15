@@ -24,7 +24,7 @@ return new class extends Migration
 
             // Appointment-specific
             $table->unsignedSmallInteger('duration_minutes')->nullable();
-
+            $table->unsignedSmallInteger('total_slots')->nullable();
             // Reservation-specific
             $table->unsignedSmallInteger('capacity')->nullable(); // max guests per room
 
