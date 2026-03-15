@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
+use App\Mail\StaffCredentials;
 use App\Models\Developer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
@@ -48,7 +51,7 @@ class StaffController extends Controller
             'can_mark_attendance' => 'boolean',
         ]);
 
-        Developer::create([
+        $staff = Developer::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
@@ -60,7 +63,7 @@ class StaffController extends Controller
         ]);
         // Send login credentials to staff member
         try {
-            Mail::to($staff->email)->send(new StaffCredentials($staff, $plainPassword, $admin));
+            defer(fn() => Mail::to($staff->email)->send(new StaffCredentials($staff, $data['password'], $admin)));
         } catch (\Exception $e) {
             // Non-fatal — staff was created, just log the failure
             \Illuminate\Support\Facades\Log::error('Staff credentials email failed', [
@@ -145,13 +148,13 @@ class StaffController extends Controller
     public function resendCredentials(int $id): RedirectResponse
     {
         $admin         = auth()->user()->effectiveDeveloper();
-        $staff         = $this->findStaff($id);
+        $staff         = $this->findStaff(request(), $id);
         $plainPassword = Str::password(12, true, true, false);
  
         $staff->update(['password' => Hash::make($plainPassword)]);
  
         try {
-            Mail::to($staff->email)->send(new StaffCredentials($staff, $plainPassword, $admin));
+            defer(fn() => Mail::to($staff->email)->send(new StaffCredentials($staff, $plainPassword, $admin)));
             return redirect()->route('staff.index')
                 ->with('success', "New credentials sent to {$staff->email}.");
         } catch (\Exception $e) {
