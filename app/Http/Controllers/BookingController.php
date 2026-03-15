@@ -83,7 +83,7 @@ class BookingController extends Controller
 
             // Count paid/pending bookings for this category that overlap the requested dates
             $overlapping = \App\Models\Booking::where('category_id', $category->id)
-                ->whereIn('status', 'paid')
+                ->whereIn('status', ['paid'])
                 ->where(function ($q) use ($requested_in, $requested_out) {
                     // Overlap condition: existing booking starts before new end AND ends after new start
                     $q->where('check_in',  '<', $requested_out)

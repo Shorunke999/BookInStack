@@ -39,7 +39,7 @@
                value="{{ $category ? $category->price : old('price', '') }}"
                placeholder="e.g. 5000"
                min="1" step="0.01" required />
-        <span style="font-size:11px; color:var(--muted);">Enter in Naira — stored as kobo automatically</span>
+        <span style="font-size:11px; color:var(--muted);">Enter in Naira </span>
     </div>
 
 </div>
