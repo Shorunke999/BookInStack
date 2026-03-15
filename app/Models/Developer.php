@@ -107,7 +107,7 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
     {
         return $this->payments()
             ->where('status', 'success')
-            ->sum('developer_amount') / 100; // convert kobo → naira
+            ->sum('developer_amount') ; // convert kobo → naira
     }
 
     public function totalBookings(): int

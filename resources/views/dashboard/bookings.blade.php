@@ -109,7 +109,7 @@
                         {{ $b->preferred_time ? \Carbon\Carbon::parse($b->preferred_time)->format('g:i A') : '—' }}
                     </td>
                     <td style="font-weight:700; font-size:13px; white-space:nowrap;">
-                        ₦{{ number_format($b->amount / 100, 2) }}
+                        ₦{{ number_format($b->amount , 2) }}
                     </td>
                     <td>@include('components.status-badge', ['status' => $b->status])</td>
                     <td>
@@ -327,7 +327,7 @@
                     </td>
                     <td style="text-align:center;" class="hide-mobile">
                         <span style="font-weight:700; font-size:14px;">{{ $nights }}</span>
-                        <div style="font-size:11px; color:var(--muted);">₦{{ number_format($b->amount / 100, 0) }}/n</div>
+                        <div style="font-size:11px; color:var(--muted);">₦{{ number_format($b->amount , 0) }}/n</div>
                     </td>
                     <td style="text-align:right; font-weight:700; font-size:14px; white-space:nowrap;">
                         ₦{{ number_format($total / 100, 2) }}

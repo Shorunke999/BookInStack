@@ -58,13 +58,13 @@ class BookingCategory extends Model
 
     public function formattedPrice(): string
     {
-        return '₦' . number_format($this->price / 100, 2);
+        return '₦' . number_format($this->price , 2);
     }
 
     public function formattedChildPrice(): ?string
     {
         return $this->child_price
-            ? '₦' . number_format($this->child_price / 100, 2)
+            ? '₦' . number_format($this->child_price , 2)
             : null;
     }
 
