@@ -213,7 +213,7 @@
                         @endif
                     </td>
                     <td style="text-align:right; font-weight:700; font-size:14px; white-space:nowrap;">
-                        ₦{{ number_format($total / 100, 2) }}
+                        ₦{{ number_format($total , 2) }}
                     </td>
                     <td>@include('components.status-badge', ['status' => $b->status])</td>
                     <td>
@@ -330,7 +330,7 @@
                         <div style="font-size:11px; color:var(--muted);">₦{{ number_format($b->amount , 0) }}/n</div>
                     </td>
                     <td style="text-align:right; font-weight:700; font-size:14px; white-space:nowrap;">
-                        ₦{{ number_format($total / 100, 2) }}
+                        ₦{{ number_format($total , 2) }}
                     </td>
                     <td>@include('components.status-badge', ['status' => $b->status])</td>
                     <td>
