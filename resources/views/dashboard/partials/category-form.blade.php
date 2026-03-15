@@ -36,7 +36,7 @@
             @endif
         </label>
         <input type="number" name="price" class="form-control"
-               value="{{ $category ? $category->price / 100 : old('price', '') }}"
+               value="{{ $category ? $category->price : old('price', '') }}"
                placeholder="e.g. 5000"
                min="1" step="0.01" required />
         <span style="font-size:11px; color:var(--muted);">Enter in Naira — stored as kobo automatically</span>
