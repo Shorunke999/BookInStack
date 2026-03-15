@@ -95,14 +95,31 @@ class AuthController extends Controller
         ]);
     }
 
-    public function verificationVerify(EmailVerificationRequest $request): RedirectResponse
+   public function verificationVerify(Request $request, string $id, string $hash): RedirectResponse
     {
-        $request->fulfill(); // marks email_verified_at
+        $developer = \App\Models\Developer::findOrFail($id);
 
-        Auth::login($request->user());
+        // Check signature
+        if (! hash_equals($hash, sha1($developer->getEmailForVerification()))) {
+            abort(403, 'Invalid verification link.');
+        }
+
+        // Check URL signature
+        if (! $request->hasValidSignature()) {
+            abort(403, 'Verification link expired.');
+        }
+
+        // Mark verified if not already
+        if (! $developer->hasVerifiedEmail()) {
+            $developer->markEmailAsVerified();
+        }
+
+        // Log them in
+        Auth::login($developer);
+        $request->session()->regenerate();
 
         return redirect()->route('dashboard.api-keys')
-            ->with('success', 'Email verified! Welcome to BookStack.');
+            ->with('success', 'Email verified! Welcome to BookInStack.');
     }
 
     public function verificationSend(Request $request): RedirectResponse
@@ -124,7 +141,7 @@ class AuthController extends Controller
             return redirect()->route('login')->with('success', 'Email already verified. Please log in.');
         }
 
-        $developer->sendEmailVerificationNotification();
+        defer(fn() => $developer->sendEmailVerificationNotification());
 
         return back()->with('success', 'Verification link sent! Check your inbox.');
     }

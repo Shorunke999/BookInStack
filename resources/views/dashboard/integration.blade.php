@@ -271,7 +271,10 @@ window.<span class="fn">addEventListener</span>(<span class="str">'BookStackIn:b
         </div>
     </div>
     @endif
-
+    <a href="/sdk/test.html" target="_blank" class="nav-item">
+    @include('components.icon', ['name' => 'code'])
+    SDK Console ↗
+</a>
 </div>
 
 @endsection

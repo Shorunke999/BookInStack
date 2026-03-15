@@ -9,7 +9,7 @@ class PaystackService
 {
     private const BASE_URL = 'https://api.paystack.co';
 
-    private const SPLIT_RATIO = 0.005; // 5% platform fee
+    private const SPLIT_RATIO = 0.01; // 5% platform fee
 
     private PendingRequest $http;
 
