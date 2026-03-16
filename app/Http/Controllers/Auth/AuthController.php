@@ -77,7 +77,7 @@ class AuthController extends Controller
         ]);
 
         // Fires the Registered event → triggers email verification notification
-        defer(fn() => event(new Registered($developer)));
+        event(new Registered($developer));
 
         return redirect()->route('verification.notice')
             ->with('success', 'Account created! Please check your email to verify your address.');
@@ -141,7 +141,7 @@ class AuthController extends Controller
             return redirect()->route('login')->with('success', 'Email already verified. Please log in.');
         }
 
-        defer(fn() => $developer->sendEmailVerificationNotification());
+        $developer->sendEmailVerificationNotification();
 
         return back()->with('success', 'Verification link sent! Check your inbox.');
     }
