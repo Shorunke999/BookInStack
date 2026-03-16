@@ -11,7 +11,7 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class BookingConfirmed extends Mailable implements ShouldQueue
+class BookingConfirmed extends Mailable i
 {
     use Queueable, SerializesModels;
 
