@@ -64,7 +64,6 @@
             z-index: 50;
             transition: transform .25s cubic-bezier(.4,0,.2,1);
         }
-
         .sidebar-brand {
             padding: 22px 20px 18px;
             border-bottom: 1px solid rgba(255,255,255,.08);
@@ -108,6 +107,7 @@
             flex: 1;
             padding: 12px 10px;
             overflow-y: auto;
+            padding-bottom: 80px;
         }
 
         .nav-section-label {
@@ -495,6 +495,13 @@
         ──────────────────────────────────────────────────── */
         @media (max-width: 768px) {
 
+             .sidebar-footer {
+                position: sticky;
+                bottom: 0;
+                background: var(--sidebar-bg, #0e0b07);
+                padding: 12px 10px;
+                border-top: 1px solid rgba(255,255,255,.08);
+            }
             /* Sidebar slides off left by default */
             #sidebar {
                 transform: translateX(-100%);
@@ -587,9 +594,11 @@
     </nav>
 
     <div class="sidebar-footer">
-        <form method="POST" action="{{ route('logout') }}" style="margin:0;">
+        <form method="POST" action="{{ route('logout') }}" style="margin:0; padding-bottom: env(safe-area-inset-bottom, 16px);">
             @csrf
-            <button type="submit" class="nav-item logout">
+            <button type="submit" class="nav-item logout"
+                    style="background:none; border:none; cursor:pointer; width:100%; color:#ef4444;
+                        padding-bottom: 20px;">
                 @include('components.icon', ['name' => 'logout'])
                 Sign Out
             </button>
