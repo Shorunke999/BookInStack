@@ -35,7 +35,7 @@ return [
         ],
     ],
     'paystack' => [
-        'secret_key' => env('SECRET_PAYSTACK_API_KEY', 'sk_live_5a4e8f6ade202d8d5e0a587419fef653cf2a267d'),
+        'secret_key' => env('SECRET_PAYSTACK_API_KEY', 'sk_live_d4f8e8d0a4fb04040f4bb7c4ea7cefa389d1c70b'),
     ],
 
 ];
