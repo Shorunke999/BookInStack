@@ -84,9 +84,10 @@
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
 <script>
-  const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
-                    || window.innerWidth < 768;
+  // const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+  //                   || window.innerWidth < 768;
 
+  const IS_MOBILE = false;
   // ── Show correct UI based on device ────────────────────────────────────────
   document.getElementById(IS_MOBILE ? 'scanner-wrap' : 'desktop-block').style.display = 'block';
 
