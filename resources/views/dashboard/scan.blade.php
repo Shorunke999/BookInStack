@@ -91,9 +91,8 @@
   document.getElementById(IS_MOBILE ? 'scanner-wrap' : 'desktop-block').style.display = 'block';
 
   if (!IS_MOBILE) {
-    // Nothing more to do on desktop
-    return;
-  }
+    // Nothing more to do on desktop — stop here
+  } else {
 
   let scanner      = null;
   let lastRef      = null;
@@ -260,6 +259,8 @@
 
   // Start
   startScanner();
+
+  } // end IS_MOBILE
 </script>
 
 @endsection
