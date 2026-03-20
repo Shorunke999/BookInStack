@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\Dashboard\BookingCategoryController;
+use App\Http\Controllers\Dashboard\PaymentLinkController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Dashboard\NinController;
 use App\Http\Controllers\Dashboard\StaffController;
@@ -52,7 +53,41 @@ Route::middleware('auth')->group(function () {
     Route::post('/bookings/{reference}/attend', [BookingController::class, 'dashboardMarkAttended'])
         ->name('bookings.attend');
 
-        
+     
+    // Payment links (dashboard)
+    Route::get   ('/payment-links',                [PaymentLinkController::class, 'index'])->name('payment-links.index');
+    Route::get   ('/payment-links/create',         [PaymentLinkController::class, 'create'])->name('payment-links.create');
+    Route::post  ('/payment-links',                [PaymentLinkController::class, 'store'])->name('payment-links.store');
+    Route::get   ('/payment-links/{token}',        [PaymentLinkController::class, 'showDashboard'])->name('payment-links.show-dashboard');
+    Route::post  ('/payment-links/{token}/cancel', [PaymentLinkController::class, 'cancel'])->name('payment-links.cancel');
+    
+     // QR Scanner — mobile only, all roles
+    Route::get('/scan', function () {
+        return view('dashboard.scan');
+    })->name('scan');
+ 
+    Route::get('/scan/lookup/{reference}', function (string $reference) {
+        $developer = auth()->user()->effectiveDeveloper();
+        $booking   = \App\Models\Booking::where('reference', $reference)
+            ->where('developer_id', $developer->id)
+            ->with('category')
+            ->first();
+ 
+        if (!$booking) {
+            return response()->json(['message' => 'Booking not found.'], 404);
+        }
+ 
+        return response()->json(['booking' => [
+            'reference'     => $booking->reference,
+            'customer_name' => $booking->customer_name,
+            'description'   => $booking->category?->name ?? $booking->description,
+            'status'        => $booking->status,
+            'attended'      => $booking->attended,
+            'attended_at'   => $booking->attended_at?->format('d M, H:i'),
+            'adults'        => $booking->adults   ?? 1,
+            'children'      => $booking->children ?? 0,
+        ]]);
+    })->name('scan.lookup');
 
     // ── Admin only ────────────────────────────────────────
     Route::middleware('admin')->group(function () {
@@ -108,3 +143,6 @@ Route::get('/', function () {
         ? redirect()->route('dashboard')
         : view('welcome');
 })->name('home');
+// ─── Public payment link pages (no auth) ─────────────────────────────────────
+Route::get  ('/pay/{token}',            [PaymentLinkController::class, 'publicShow'])->name('pay.show');
+Route::post ('/pay/{token}/initialize', [PaymentLinkController::class, 'publicPay'])->name('pay.initialize');

@@ -42,7 +42,9 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
 
         'email_verified_at',
          'widget_config',
-         'reservation_unit'
+         'reservation_unit',
+         'enable_negotiate',
+            'whatsapp_number'
 
     ];
 

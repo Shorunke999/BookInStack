@@ -31,17 +31,57 @@
     <div class="form-group" style="margin-bottom:0;">
         <label>
             @if($mode === 'ticket') Adult Price (₦)
-            @elseif($mode === 'reservation') Price per Night (₦)
+            @elseif($mode === 'reservation') Price per {{ $rateUnit ?? 'night' }} (₦)
             @else Price (₦)
             @endif
         </label>
-        <input type="number" name="price" class="form-control"
-               value="{{ $category ? $category->price : old('price', '') }}"
+        <input type="number" name="price" id="price-input{{ $suffix }}" class="form-control"
+               value="{{ $category ? $category->price  : old('price', '') }}"
                placeholder="e.g. 5000"
-               min="1" step="0.01" required />
-        <span style="font-size:11px; color:var(--muted);">Enter in Naira </span>
+               min="1" step="0.01"
+               {{ ($category && !$category->fixed_price) ? '' : 'required' }} />
+        <span style="font-size:11px; color:var(--muted);">Enter in Naira — stored as kobo automatically</span>
     </div>
 
+</div>
+
+{{-- Fixed / Custom price toggle --}}
+<div style="margin-top:12px; padding:12px 14px; background:#f8fafc; border:1px solid var(--border); border-radius:8px;">
+    <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
+        <input type="hidden" name="fixed_price" value="0" />
+        <input type="checkbox" name="fixed_price" value="1"
+               id="fixed-price{{ $suffix }}"
+               {{ old('fixed_price', $category?->fixed_price ?? true) ? 'checked' : '' }}
+               onchange="toggleFixedPrice(this, '{{ $suffix }}')"
+               style="width:15px; height:15px; accent-color:var(--accent); margin-top:2px; cursor:pointer; flex-shrink:0;" />
+        <div>
+            <div style="font-size:13px; font-weight:600;">Fixed Price</div>
+            <div style="font-size:12px; color:var(--muted); line-height:1.4;">
+                When off, customers can enter a custom amount in the widget (useful for negotiated bookings).
+            </div>
+        </div>
+    </label>
+
+    <div id="price-range-wrap{{ $suffix }}"
+         style="{{ old('fixed_price', $category?->fixed_price ?? true) ? 'display:none;' : '' }} margin-top:12px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div class="form-group" style="margin-bottom:0;">
+                <label style="font-size:12px;">Min Amount (₦) <span style="font-weight:400;color:var(--muted);">(optional)</span></label>
+                <input type="number" name="min_price" class="form-control"
+                       value="{{ $category ? ($category->min_price ? $category->min_price  : '') : old('min_price', '') }}"
+                       placeholder="e.g. 50000" min="1" step="0.01" />
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label style="font-size:12px;">Max Amount (₦) <span style="font-weight:400;color:var(--muted);">(optional)</span></label>
+                <input type="number" name="max_price" class="form-control"
+                       value="{{ $category ? ($category->max_price ? $category->max_price  : '') : old('max_price', '') }}"
+                       placeholder="e.g. 500000" min="1" step="0.01" />
+            </div>
+        </div>
+        <div style="font-size:11px; color:var(--muted); margin-top:6px;">
+            Set min/max to guide the customer on acceptable price range. Leave blank for no limit.
+        </div>
+    </div>
 </div>
 
 {{-- Description --}}
@@ -128,7 +168,7 @@
             <div class="form-group" style="margin-bottom:0;">
                 <label>Child Price (₦)</label>
                 <input type="number" name="child_price" class="form-control"
-                       value="{{ $category ? ($category->child_price ? $category->child_price / 100 : '') : old('child_price', '') }}"
+                       value="{{ $category ? ($category->child_price ? $category->child_price  : '') : old('child_price', '') }}"
                        placeholder="e.g. 2500" min="0" step="0.01" style="max-width:200px;" />
             </div>
         </div>

@@ -236,6 +236,8 @@ class BookingController extends Controller
             'open'         => $open,
             'reason'       => $reason,
             'booking_mode' => $mode,
+            'enable_negotiate' => $developer->enable_negotiate ?? false,
+            'whatsapp_number'  => $developer->whatsapp_number ?? '',
             'catalog'      => $catalog,
             'widget_config'    => $developer->widget_config ?? (object)[],
             'reservation_unit' => $developer->reservation_unit ?? null

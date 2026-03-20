@@ -167,7 +167,7 @@ class DashboardController extends Controller
     // ─── Booking Window Settings ─────────────────────────────────────────────────
     public function bookingSettings(Request $request): View
     {
-         $developer  = $this->effectiveDeveloper($request);
+        $developer  = $this->effectiveDeveloper($request);
         $modeConfig = $developer->modeConfig();
         $categories = $developer->bookingCategories()
                         ->forMode($developer->booking_mode)
@@ -178,32 +178,36 @@ class DashboardController extends Controller
     }
 
 
-    public function saveBookingSettings(Request $request): RedirectResponse
+     public function saveBookingSettings(Request $request): RedirectResponse
     {
         $developer = $this->effectiveDeveloper($request);
-
+ 
         $request->validate([
-            'booking_mode' => 'required|in:appointment,ticket,reservation',
+            'booking_mode'          => 'required|in:appointment,ticket,reservation',
+            'reservation_unit'      => 'nullable|in:night,day',
+            'enable_negotiate'      => 'boolean',
+            'whatsapp_number'       => 'nullable|string|max:20',
             'enable_booking_window' => 'boolean',
-             'reservation_unit'      => 'nullable|in:night,day',
             'window_days'           => 'nullable|array',
             'window_days.*'         => 'in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
             'open_time'             => 'nullable|date_format:H:i',
             'close_time'            => 'nullable|date_format:H:i|after:open_time',
         ]);
+ 
         $developer->update([
-            'booking_mode' => $request->booking_mode,
+            'booking_mode'          => $request->booking_mode,
             'reservation_unit'      => $request->input('reservation_unit', 'night'),
+            'enable_negotiate'      => $request->boolean('enable_negotiate'),
+            'whatsapp_number'       => $request->input('whatsapp_number'),
             'enable_booking_window' => $request->boolean('enable_booking_window'),
-            'booking_window' => [
+            'booking_window'        => [
                 'days'       => $request->input('window_days', []),
                 'open_time'  => $request->input('open_time',  '09:00'),
                 'close_time' => $request->input('close_time', '17:00'),
             ],
         ]);
-
-
-        return back()->with('success', 'Booking Settings saved.');
+ 
+        return back()->with('success', 'Booking settings saved.');
     }
 
     

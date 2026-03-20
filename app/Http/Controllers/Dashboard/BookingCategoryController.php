@@ -34,7 +34,7 @@ class BookingCategoryController extends Controller
     {
         $this->authorise($category);
         $mode = $category->booking_mode;
-
+        
         $category->update($this->validated($request, $mode));
 
         return back()->with('success', 'Category updated.');
@@ -86,8 +86,8 @@ class BookingCategoryController extends Controller
         $rules = [
             'name'        => 'required|string|max:80',
             'description' => 'nullable|string|max:255',
-            'price'       => 'required|integer|min:100', // kobo
-             'total_slots' => 'nullable|integer|min:1',
+            'price'       => 'nullable|integer|min:100', // kobo
+            'total_slots' => 'nullable|integer|min:1',
             'status'      => 'in:active,inactive',
         ];
 

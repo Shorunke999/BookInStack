@@ -581,8 +581,10 @@
 
         @include('components.nav-item', ['route' => 'dashboard',          'label' => 'Overview',  'icon' => 'grid'])
         @include('components.nav-item', ['route' => 'dashboard.bookings', 'label' => 'Bookings',  'icon' => 'list'])
-        @include('components.nav-item', ['route' => 'dashboard.payments', 'label' => 'Payments',  'icon' => 'credit-card'])
-
+        @include('components.nav-item', ['route' => 'payment-links.index',   'label' => 'Payment Links',  'icon' => 'link'])
+         @if(preg_match('/Android|iPhone|iPad|iPod|Mobile/i', request()->header('User-Agent', '')))
+            @include('components.nav-item', ['route' => 'scan', 'label' => 'Scan QR', 'icon' => 'qr'])
+        @endif
         @if(auth()->user()->isAdmin())
             <div class="nav-section-label" style="margin-top:8px;">Admin</div>
             @include('components.nav-item', ['route' => 'dashboard.api-keys',        'label' => 'API Keys',    'icon' => 'key'])
