@@ -64,10 +64,7 @@ Route::middleware('auth')->group(function () {
      // QR Scanner — mobile only, all roles
     Route::get('/scan', function () {
         $developer = auth()->user()->effectiveDeveloper();
-        $modeConfig = $developer->modeConfig();
-        $categories = $developer->bookingCategories()->where('booking_mode', $developer->booking_mode)->get();
-        $bookings = $developer->bookings()->where('booking_mode', $developer->booking_mode)->get();
-        return view('dashboard.scan', compact('modeConfig','categories','bookings'));
+        return view('dashboard.scan');
     })->name('scan');
  
     Route::get('/scan/lookup/{reference}', function (string $reference) {

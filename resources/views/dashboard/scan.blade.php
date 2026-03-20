@@ -1,598 +1,265 @@
 @extends('layouts.app')
-@section('title', $modeConfig['plural'])
-@section('page-title', $modeConfig['plural'])
+@section('title', 'QR Scanner')
+@section('page-title', 'Scan Ticket')
 
 @section('content')
 
-{{-- ── Mode + slot indicators ───────────────────────────────────────────────── --}}
-<div style="display:flex; align-items:center; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
-    <span style="
-        display:inline-flex; align-items:center; gap:6px;
-        background:var(--accent-light); color:var(--accent);
-        font-size:12px; font-weight:700; padding:5px 12px; border-radius:20px;
-    ">{{ match($modeConfig['mode']) { 'ticket'=>'🎟', 'reservation'=>'🏨', default=>'🗓' } }}
-    {{ $modeConfig['label'] }} Mode</span>
-
-    <span style="font-size:13px; color:var(--muted);">
-        {{ number_format($bookings->count()) }} {{ strtolower($modeConfig['plural']) }}
-    </span>
-
-    @foreach($categories as $cat)
-        @if($cat->total_slots !== null)
-            @php $rem = $cat->slotsRemaining(); $pct = $cat->total_slots > 0 ? round(($cat->slotsBooked() / $cat->total_slots) * 100) : 0; @endphp
-            <span style="
-                font-size:12px; font-weight:600; padding:4px 11px; border-radius:20px;
-                {{ $rem === 0 ? 'background:#fef2f2;color:#ef4444;' : ($pct >= 80 ? 'background:#fffbeb;color:#d97706;' : 'background:#f0fdf4;color:#15803d;') }}
-            ">{{ $cat->name }}: {{ $rem === 0 ? 'Full' : $rem . ' slot' . ($rem === 1 ? '' : 's') . ' left' }}</span>
-        @endif
-    @endforeach
+{{-- ── Desktop blocked state ──────────────────────────────────────────────── --}}
+<div id="desktop-block" style="display:none; text-align:center; padding:60px 20px;">
+    <div style="font-size:56px; margin-bottom:16px;">💻</div>
+    <h2 style="font-size:20px; font-weight:700; margin-bottom:8px;">Phone Required</h2>
+    <p style="font-size:14px; color:var(--muted); line-height:1.7; max-width:340px; margin:0 auto;">
+        The QR scanner uses your device camera. Please open this page on a smartphone or tablet.
+    </p>
+    <div style="margin-top:24px; padding:14px 20px; background:var(--soft); border-radius:8px; border:1px solid var(--border); display:inline-block;">
+        <div style="font-size:12px; color:var(--muted); margin-bottom:6px;">Or mark attendance manually:</div>
+        <a href="{{ route('dashboard.bookings') }}" class="btn btn-primary btn-sm">Go to Bookings →</a>
+    </div>
 </div>
 
-{{-- ── Filters ──────────────────────────────────────────────────────────────── --}}
-<div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:16px;">
+{{-- ── Mobile scanner ───────────────────────────────────────────────────────── --}}
+<div id="scanner-wrap" style="display:none; max-width:440px; margin:0 auto;">
 
-    <div style="display:flex; gap:6px; flex-wrap:wrap;">
-        @foreach(['all'=>'All','pending'=>'Pending','paid'=>'Paid','failed'=>'Failed'] as $v=>$l)
-            <a href="{{ route('dashboard.bookings', array_merge(request()->only('search','category'), ['status' => $v === 'all' ? null : $v])) }}"
-               style="padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; text-decoration:none; white-space:nowrap;
-                      {{ request('status','all') === $v ? 'background:var(--accent);color:#fff;' : 'background:#fff;color:var(--muted);border:1px solid var(--border);' }}">
-                {{ $l }}
-            </a>
-        @endforeach
+    {{-- Status bar --}}
+    <div id="scan-status" style="
+        text-align:center; padding:12px 16px; border-radius:8px;
+        font-size:14px; font-weight:600; margin-bottom:20px;
+        background:var(--soft); border:1px solid var(--border); color:var(--muted);
+    ">
+        📷 Point camera at QR code
     </div>
 
-    @if($categories->isNotEmpty())
-        <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            <a href="{{ route('dashboard.bookings', array_merge(request()->only('status','search'), ['category'=>null])) }}"
-               style="padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; text-decoration:none; white-space:nowrap;
-                      {{ !request('category') ? 'background:var(--ink);color:#fff;' : 'background:#fff;color:var(--muted);border:1px solid var(--border);' }}">All</a>
-            @foreach($categories as $cat)
-                <a href="{{ route('dashboard.bookings', array_merge(request()->only('status','search'), ['category'=>$cat->id])) }}"
-                   style="padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; text-decoration:none; white-space:nowrap;
-                          {{ request('category') == $cat->id ? 'background:var(--ink);color:#fff;' : 'background:#fff;color:var(--muted);border:1px solid var(--border);' }}">
-                    {{ $cat->name }}
-                </a>
+    {{-- Camera viewfinder --}}
+    <div style="position:relative; border-radius:14px; overflow:hidden; background:#000; aspect-ratio:1;">
+        <div id="qr-reader" style="width:100%;"></div>
+
+        {{-- Corner guides --}}
+        <div style="position:absolute; inset:16px; pointer-events:none;">
+            @foreach(['top-left','top-right','bottom-left','bottom-right'] as $corner)
+                @php
+                    $styles = match($corner) {
+                        'top-left'     => 'top:0;left:0;border-top:3px solid #fff;border-left:3px solid #fff;',
+                        'top-right'    => 'top:0;right:0;border-top:3px solid #fff;border-right:3px solid #fff;',
+                        'bottom-left'  => 'bottom:0;left:0;border-bottom:3px solid #fff;border-left:3px solid #fff;',
+                        'bottom-right' => 'bottom:0;right:0;border-bottom:3px solid #fff;border-right:3px solid #fff;',
+                    };
+                @endphp
+                <div style="position:absolute; width:24px; height:24px; border-radius:2px; {{ $styles }}"></div>
             @endforeach
         </div>
-    @endif
-
-    <form method="GET" action="{{ route('dashboard.bookings') }}"
-          style="display:flex; gap:6px; flex:1; min-width:180px; max-width:280px; margin-left:auto;">
-        @foreach(request()->only('status','category') as $k=>$v)
-            @if($v) <input type="hidden" name="{{ $k }}" value="{{ $v }}" /> @endif
-        @endforeach
-        <input type="text" name="search" value="{{ request('search') }}"
-               placeholder="Name, email, ref…" class="form-control" style="flex:1; font-size:13px;" />
-        <button type="submit" class="btn btn-outline btn-sm">Go</button>
-    </form>
-</div>
-
-{{-- ════════════════════════════════════════════════════════
-     APPOINTMENT TABLE
-════════════════════════════════════════════════════════ --}}
-@if($modeConfig['mode'] === 'appointment')
-<div class="card" style="padding:0; overflow:hidden;">
-    <div class="table-wrap">
-        <table>
-            <thead>
-                <tr>
-                    <th>Reference</th>
-                    <th>Customer</th>
-                    <th>Service</th>
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>Fee</th>
-                    <th>Status</th>
-                    <th>Attended</th>
-                    <th class="hide-mobile">Booked On</th>
-                    @if(auth()->user()->isAdmin()) <th></th> @endif
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($bookings as $b)
-                <tr>
-                    <td class="mono" style="font-size:11px;">
-                        <button onclick="viewBooking('{{ $b->reference }}')"
-                                style="background:none;border:none;cursor:pointer;color:var(--accent);font-family:'DM Mono',monospace;font-size:11px;padding:0;text-decoration:underline;">
-                            {{ $b->reference }}
-                        </button>
-                    </td>
-                    <td>
-                        <div style="font-weight:600; font-size:13px;">{{ $b->customer_name ?: '—' }}</div>
-                        <div style="font-size:11px; color:var(--muted);">{{ $b->customer_email }}</div>
-                    </td>
-                    <td style="font-size:13px;">
-                        {{ $b->category?->name ?? $b->description }}
-                        @if($b->category?->duration_minutes)
-                            <div style="font-size:11px; color:var(--muted);">⏱ {{ $b->category->duration_minutes }} min</div>
-                        @endif
-                    </td>
-                    <td style="font-size:13px; white-space:nowrap;">
-                        {{ $b->preferred_date?->format('d M Y') ?? '—' }}
-                    </td>
-                    <td style="font-size:13px; white-space:nowrap;">
-                        {{ $b->preferred_time ? \Carbon\Carbon::parse($b->preferred_time)->format('g:i A') : '—' }}
-                    </td>
-                    <td style="font-weight:700; font-size:13px; white-space:nowrap;">
-                        ₦{{ number_format($b->amount , 2) }}
-                    </td>
-                    <td>@include('components.status-badge', ['status' => $b->status])</td>
-                    <td>
-                        @if($b->status === 'paid')
-                            @if($b->attended)
-                                <span style="font-size:11px; font-weight:700; background:#f0fdf4; color:#15803d; padding:3px 8px; border-radius:10px;">✓ Attended</span>
-                            @else
-                                <form method="POST" action="{{ route('bookings.attend', $b->reference) }}" style="margin:0;">
-                                    @csrf
-                                    <input type="hidden" name="attended" value="1" />
-                                    <button type="submit" class="btn btn-outline btn-sm" style="font-size:11px; padding:3px 9px;">Mark</button>
-                                </form>
-                            @endif
-                        @else
-                            <span style="color:var(--border);">—</span>
-                        @endif
-                    </td>
-                    <td class="hide-mobile" style="font-size:12px; white-space:nowrap;">
-                        {{ $b->created_at->format('d M Y') }}
-                        <div style="color:var(--muted);">{{ $b->created_at->format('H:i') }}</div>
-                    </td>
-                    @if(auth()->user()->isAdmin())
-                        <td>
-                            @if($b->attended)
-                                <form method="POST" action="{{ route('bookings.attend', $b->reference) }}" style="margin:0;">
-                                    @csrf <input type="hidden" name="attended" value="0" />
-                                    <button type="submit" class="btn btn-outline btn-sm" style="font-size:11px; padding:3px 9px; color:var(--muted);">Undo</button>
-                                </form>
-                            @endif
-                        </td>
-                    @endif
-                </tr>
-                @empty
-                <tr><td colspan="10" style="text-align:center; padding:48px; color:var(--muted); font-size:14px;">
-                    No appointments yet.
-                    @if(request()->hasAny(['search','status','category']))
-                        <a href="{{ route('dashboard.bookings') }}" style="color:var(--accent);">Clear filters</a>
-                    @endif
-                </td></tr>
-                @endforelse
-            </tbody>
-        </table>
     </div>
-    @if($bookings->hasPages())
-        <div style="padding:14px 20px; border-top:1px solid var(--border);">
-            {{ $bookings->withQueryString()->links('components.pagination') }}
+
+    {{-- Result card (hidden until scan) --}}
+    <div id="result-card" style="display:none; margin-top:20px;" class="card">
+        <div id="result-content"></div>
+        <div style="display:flex; gap:10px; margin-top:16px;">
+            <button id="btn-confirm" onclick="confirmAttend()"
+                    class="btn btn-primary btn-sm" style="flex:1;">
+                ✓ Mark as Attended
+            </button>
+            <button onclick="resetScanner()"
+                    class="btn btn-outline btn-sm">
+                Scan Again
+            </button>
         </div>
-    @endif
-</div>
-@endif
-
-
-{{-- ════════════════════════════════════════════════════
-     TICKET TABLE
-════════════════════════════════════════════════════ --}}
-@if($modeConfig['mode'] === 'ticket')
-<div class="card" style="padding:0; overflow:hidden;">
-    <div class="table-wrap">
-        <table>
-            <thead>
-                <tr>
-                    <th>Reference</th>
-                    <th>Customer</th>
-                    <th>Ticket Type</th>
-                    <th style="text-align:center;">Adults</th>
-                    <th style="text-align:center;" class="hide-mobile">Children</th>
-                    <th style="text-align:right;">Total</th>
-                    <th>Status</th>
-                    <th>Checked In</th>
-                    <th class="hide-mobile">Booked On</th>
-                    @if(auth()->user()->isAdmin()) <th></th> @endif
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($bookings as $b)
-                @php
-                    $adultPrice = $b->amount;
-                    $childPrice = ($b->category?->enable_child_pricing && $b->category->child_price)
-                        ? $b->category->child_price : $b->amount;
-                    $total = ($adultPrice * $b->adults) + ($childPrice * $b->children);
-                @endphp
-                <tr>
-                    <td class="mono" style="font-size:11px;">
-                        <button onclick="viewBooking('{{ $b->reference }}')"
-                                style="background:none;border:none;cursor:pointer;color:var(--accent);font-family:'DM Mono',monospace;font-size:11px;padding:0;text-decoration:underline;">
-                            {{ $b->reference }}
-                        </button>
-                    </td>
-                    <td>
-                        <div style="font-weight:600; font-size:13px;">{{ $b->customer_name ?: '—' }}</div>
-                        <div style="font-size:11px; color:var(--muted);">{{ $b->customer_email }}</div>
-                    </td>
-                    <td style="font-size:13px;">
-                        {{ $b->category?->name ?? $b->description }}
-                    </td>
-                    <td style="text-align:center;">
-                        <span style="font-weight:700; font-size:14px;">{{ $b->adults }}</span>
-                        <div style="font-size:11px; color:var(--muted);">₦{{ number_format($adultPrice , 0) }} ea</div>
-                    </td>
-                    <td style="text-align:center;" class="hide-mobile">
-                        @if($b->children > 0)
-                            <span style="font-weight:700; font-size:14px;">{{ $b->children }}</span>
-                            <div style="font-size:11px; color:var(--muted);">₦{{ number_format($childPrice , 0) }} ea</div>
-                        @else
-                            <span style="color:var(--border);">—</span>
-                        @endif
-                    </td>
-                    <td style="text-align:right; font-weight:700; font-size:14px; white-space:nowrap;">
-                        ₦{{ number_format($total , 2) }}
-                    </td>
-                    <td>@include('components.status-badge', ['status' => $b->status])</td>
-                    <td>
-                        @if($b->status === 'paid')
-                            @if($b->attended)
-                                <span style="font-size:11px; font-weight:700; background:#f0fdf4; color:#15803d; padding:3px 8px; border-radius:10px;">✓ In</span>
-                                @if($b->attended_at)
-                                    <div style="font-size:11px; color:var(--muted);">{{ $b->attended_at->format('H:i') }}</div>
-                                @endif
-                            @else
-                                <form method="POST" action="{{ route('bookings.attend', $b->reference) }}" style="margin:0;">
-                                    @csrf <input type="hidden" name="attended" value="1" />
-                                    <button type="submit" class="btn btn-outline btn-sm" style="font-size:11px; padding:3px 9px;">Check In</button>
-                                </form>
-                            @endif
-                        @else
-                            <span style="color:var(--border);">—</span>
-                        @endif
-                    </td>
-                    <td class="hide-mobile" style="font-size:12px; white-space:nowrap;">
-                        {{ $b->created_at->format('d M Y') }}
-                        <div style="color:var(--muted);">{{ $b->created_at->format('H:i') }}</div>
-                    </td>
-                    @if(auth()->user()->isAdmin())
-                        <td>
-                            @if($b->attended)
-                                <form method="POST" action="{{ route('bookings.attend', $b->reference) }}" style="margin:0;">
-                                    @csrf <input type="hidden" name="attended" value="0" />
-                                    <button type="submit" class="btn btn-outline btn-sm" style="font-size:11px; padding:3px 9px; color:var(--muted);">Undo</button>
-                                </form>
-                            @endif
-                        </td>
-                    @endif
-                </tr>
-                @empty
-                <tr><td colspan="10" style="text-align:center; padding:48px; color:var(--muted); font-size:14px;">
-                    No tickets yet.
-                    @if(request()->hasAny(['search','status','category']))
-                        <a href="{{ route('dashboard.bookings') }}" style="color:var(--accent);">Clear filters</a>
-                    @endif
-                </td></tr>
-                @endforelse
-            </tbody>
-        </table>
     </div>
-    {{-- @if($bookings->hasPages())
-        <div style="padding:14px 20px; border-top:1px solid var(--border);">
-            {{ $bookings->withQueryString()->links('components.pagination') }}
+
+    {{-- Manual lookup --}}
+    <div style="margin-top:20px;" class="card">
+        <div style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;">
+            Manual Lookup
         </div>
-    @endif --}}
-</div>
-@endif
-
-
-{{-- ════════════════════════════════════════════════════════
-     RESERVATION TABLE
-════════════════════════════════════════════════════════ --}}
-@if($modeConfig['mode'] === 'reservation')
-<div class="card" style="padding:0; overflow:hidden;">
-    <div class="table-wrap">
-        <table>
-            <thead>
-                <tr>
-                    <th>Reference</th>
-                    <th>Guest</th>
-                    <th>Room / Space</th>
-                    <th>Check-in</th>
-                    <th>Check-out</th>
-                    <th style="text-align:center;" class="hide-mobile">Nights</th>
-                    <th style="text-align:right;">Total</th>
-                    <th>Status</th>
-                    <th>Checked Out</th>
-                    <th class="hide-mobile">Booked On</th>
-                    @if(auth()->user()->isAdmin()) <th></th> @endif
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($bookings as $b)
-                @php
-                    $nights = $b->nights() ?? 1;
-                    $total  = $b->amount * $nights;
-                @endphp
-                <tr>
-                    <td class="mono" style="font-size:11px;">
-                        <button onclick="viewBooking('{{ $b->reference }}')"
-                                style="background:none;border:none;cursor:pointer;color:var(--accent);font-family:'DM Mono',monospace;font-size:11px;padding:0;text-decoration:underline;">
-                            {{ $b->reference }}
-                        </button>
-                    </td>
-                    <td>
-                        <div style="font-weight:600; font-size:13px;">{{ $b->customer_name ?: '—' }}</div>
-                        <div style="font-size:11px; color:var(--muted);">{{ $b->customer_email }}</div>
-                        @if($b->customer_phone)
-                            <div style="font-size:11px; color:var(--muted);">{{ $b->customer_phone }}</div>
-                        @endif
-                    </td>
-                    <td style="font-size:13px;">
-                        {{ $b->category?->name ?? $b->description }}
-                        @if($b->category?->capacity)
-                            <div style="font-size:11px; color:var(--muted);">👥 {{ $b->category->capacity }} guests max</div>
-                        @endif
-                    </td>
-                    <td style="white-space:nowrap;">
-                        @if($b->check_in)
-                            <div style="font-weight:600; font-size:13px;">{{ $b->check_in->format('d M') }}</div>
-                            <div style="font-size:11px; color:var(--muted);">{{ $b->check_in->format('Y') }}</div>
-                        @else —
-                        @endif
-                    </td>
-                    <td style="white-space:nowrap;">
-                        @if($b->check_out)
-                            <div style="font-weight:600; font-size:13px;">{{ $b->check_out->format('d M') }}</div>
-                            <div style="font-size:11px; color:var(--muted);">{{ $b->check_out->format('Y') }}</div>
-                        @else —
-                        @endif
-                    </td>
-                    <td style="text-align:center;" class="hide-mobile">
-                        <span style="font-weight:700; font-size:14px;">{{ $nights }}</span>
-                        <div style="font-size:11px; color:var(--muted);">₦{{ number_format($b->amount , 0) }}/n</div>
-                    </td>
-                    <td style="text-align:right; font-weight:700; font-size:14px; white-space:nowrap;">
-                        ₦{{ number_format($total , 2) }}
-                    </td>
-                    <td>@include('components.status-badge', ['status' => $b->status])</td>
-                    <td>
-                        @if($b->status === 'paid')
-                            @if($b->attended)
-                                <span style="font-size:11px; font-weight:700; background:#f0fdf4; color:#15803d; padding:3px 8px; border-radius:10px;">✓ Out</span>
-                                @if($b->attended_at)
-                                    <div style="font-size:11px; color:var(--muted);">{{ $b->attended_at->format('d M H:i') }}</div>
-                                @endif
-                            @else
-                                <form method="POST" action="{{ route('bookings.attend', $b->reference) }}" style="margin:0;">
-                                    @csrf <input type="hidden" name="attended" value="1" />
-                                    <button type="submit" class="btn btn-outline btn-sm" style="font-size:11px; padding:3px 9px;">Check Out</button>
-                                </form>
-                            @endif
-                        @else
-                            <span style="color:var(--border);">—</span>
-                        @endif
-                    </td>
-                    <td class="hide-mobile" style="font-size:12px; white-space:nowrap;">
-                        {{ $b->created_at->format('d M Y') }}
-                        <div style="color:var(--muted);">{{ $b->created_at->format('H:i') }}</div>
-                    </td>
-                    @if(auth()->user()->isAdmin())
-                        <td>
-                            @if($b->attended)
-                                <form method="POST" action="{{ route('bookings.attend', $b->reference) }}" style="margin:0;">
-                                    @csrf <input type="hidden" name="attended" value="0" />
-                                    <button type="submit" class="btn btn-outline btn-sm" style="font-size:11px; padding:3px 9px; color:var(--muted);">Undo</button>
-                                </form>
-                            @endif
-                        </td>
-                    @endif
-                </tr>
-                @empty
-                <tr><td colspan="11" style="text-align:center; padding:48px; color:var(--muted); font-size:14px;">
-                    No reservations yet.
-                    @if(request()->hasAny(['search','status','category']))
-                        <a href="{{ route('dashboard.bookings') }}" style="color:var(--accent);">Clear filters</a>
-                    @endif
-                </td></tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-    @if($bookings->hasPages())
-        <div style="padding:14px 20px; border-top:1px solid var(--border);">
-            {{ $bookings->withQueryString()->links('components.pagination') }}
+        <div style="display:flex; gap:8px;">
+            <input type="text" id="manual-ref" class="form-control"
+                   placeholder="e.g. BKG-CAK9OF6LQYDQ"
+                   style="flex:1; font-size:13px; text-transform:uppercase;"
+                   oninput="this.value=this.value.toUpperCase()" />
+            <button onclick="lookupManual()" class="btn btn-outline btn-sm">Go</button>
         </div>
-    @endif
-</div>
-@endif
-
-@endsection
-
-@push('scripts')
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<style>
-  /* Slide-out detail panel */
-  .detail-overlay {
-    position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;
-    display:none;opacity:0;transition:opacity .25s;
-  }
-  .detail-overlay.open { display:block; opacity:1; }
-  .detail-panel {
-    position:fixed;top:0;right:0;bottom:0;width:420px;max-width:100vw;
-    background:#fff;z-index:201;
-    transform:translateX(100%);transition:transform .3s ease;
-    display:flex;flex-direction:column;overflow:hidden;
-    box-shadow:-8px 0 32px rgba(0,0,0,.12);
-  }
-  .detail-panel.open { transform:translateX(0); }
-  .detail-header {
-    padding:20px 24px;border-bottom:1px solid var(--border);
-    display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
-  }
-  .detail-body { flex:1;overflow-y:auto;padding:20px 24px; }
-  .detail-row { display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px; }
-  .detail-row:last-of-type { border-bottom:none; }
-  .detail-label { color:var(--muted); }
-  .detail-value { font-weight:600;text-align:right;max-width:60%; }
-  .detail-section { font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--border); }
-</style>
-
-{{-- Overlay + panel --}}
-<div class="detail-overlay" id="detail-overlay" onclick="closeDetail()"></div>
-<div class="detail-panel" id="detail-panel">
-  <div class="detail-header">
-    <div>
-      <div style="font-weight:700;font-size:15px;" id="dp-title">Booking Details</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:2px;" id="dp-ref"></div>
     </div>
-    <button onclick="closeDetail()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--muted);padding:4px;">×</button>
-  </div>
-  {{-- QR code shown for ticket mode --}}
-  <div id="dp-qr" style="display:none;text-align:center;padding:16px 0 8px;border-bottom:1px solid var(--border);margin-bottom:4px;">
-    <div id="dp-qr-img" style="display:inline-block;padding:8px;border:1px solid var(--border);border-radius:10px;background:#fff;"></div>
-    <div style="font-size:11px;color:var(--muted);margin-top:6px;font-family:monospace;" id="dp-qr-ref"></div>
-  </div>
-  <div class="detail-body" id="dp-body"></div>
+
 </div>
+
+{{-- html5-qrcode CDN --}}
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
 <script>
-  const MODE = '{{ $modeConfig['mode'] }}';
+  const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+                    || window.innerWidth < 768;
 
-  // All bookings data — passed from blade
-  const BOOKINGS = {
-    @foreach($bookings as $b)
-    '{{ $b->reference }}': {
-      reference:      '{{ $b->reference }}',
-      customer_name:  '{{ $b->customer_name ?: '—' }}',
-      customer_email: '{{ $b->customer_email }}',
-      customer_phone: '{{ $b->customer_phone ?: '—' }}',
-      category:       '{{ $b->category?->name ?? $b->description }}',
-      amount:         '₦{{ number_format($b->amount , 2) }}',
-      status:         '{{ $b->status }}',
-      attended:       {{ $b->attended ? 'true' : 'false' }},
-      attended_at:    '{{ $b->attended_at?->format('d M Y, H:i') ?? '' }}',
-      attendance_note:'{{ $b->attendance_note ?? '' }}',
-      created_at:     '{{ $b->created_at->format('d M Y, H:i') }}',
-      paid_at:        '{{ $b->paid_at?->format('d M Y, H:i') ?? '' }}',
-      @if($modeConfig['mode'] === 'appointment')
-      preferred_date: '{{ $b->preferred_date?->format('d M Y') ?? '—' }}',
-      preferred_time: '{{ $b->preferred_time ? \Carbon\Carbon::parse($b->preferred_time)->format('g:i A') : '—' }}',
-      duration:       '{{ $b->category?->duration_minutes ? $b->category->duration_minutes . ' min' : '—' }}',
-      @elseif($modeConfig['mode'] === 'ticket')
-      adults:         {{ $b->adults ?? 1 }},
-      children:       {{ $b->children ?? 0 }},
-      unit_price:     '₦{{ number_format($b->amount , 2) }}',
-      @elseif($modeConfig['mode'] === 'reservation')
-      check_in:       '{{ $b->check_in?->format('d M Y') ?? '—' }}',
-      check_out:      '{{ $b->check_out?->format('d M Y') ?? '—' }}',
-      nights:         {{ $b->nights() ?? 0 }},
-      rate_per_unit:  '₦{{ number_format($b->amount , 2) }}',
-      total:          '₦{{ $b->check_in && $b->check_out ? number_format(($b->amount * $b->nights()) , 2) : number_format($b->amount , 2) }}',
-      @endif
-    },
-    @endforeach
-  };
+  // ── Show correct UI based on device ────────────────────────────────────────
+  document.getElementById(IS_MOBILE ? 'scanner-wrap' : 'desktop-block').style.display = 'block';
 
-  function viewBooking(ref) {
-    const b = BOOKINGS[ref];
-    if (!b) return;
+  if (!IS_MOBILE) {
+    // Nothing more to do on desktop
+    return;
+  }
 
-    document.getElementById('dp-title').textContent = b.category;
-    document.getElementById('dp-ref').textContent   = ref;
+  let scanner      = null;
+  let lastRef      = null;
+  let scanLocked   = false;
 
-    // ── QR code in panel ──────────────────────────────────────────────────
-    const qrWrap = document.getElementById('dp-qr');
-    const qrImg  = document.getElementById('dp-qr-img');
-    const qrRef  = document.getElementById('dp-qr-ref');
+  const statusEl   = document.getElementById('scan-status');
+  const resultCard = document.getElementById('result-card');
+  const resultBody = document.getElementById('result-content');
+  const confirmBtn = document.getElementById('btn-confirm');
 
-    // Show QR for ticket always, for others only if paid
-    if (MODE === 'ticket' || b.status === 'paid') {
-      qrWrap.style.display = 'block';
-      qrRef.textContent    = ref;
-      qrImg.innerHTML      = '';
-      if (window.QRCode) {
-        new QRCode(qrImg, {
-          text:          ref,
-          width:         120,
-          height:        120,
-          colorDark:     '#0d0d14',
-          colorLight:    '#ffffff',
-          correctLevel:  QRCode.CorrectLevel.M,
-        });
-      } else {
-        // Fallback — monospace ref
-        qrImg.innerHTML = `<div style="font-family:monospace;font-size:11px;padding:8px;word-break:break-all;">${ref}</div>`;
-      }
+  // ── Init scanner ───────────────────────────────────────────────────────────
+  function startScanner() {
+    scanner = new Html5Qrcode('qr-reader');
+    scanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 220, height: 220 } },
+      onScanSuccess,
+      () => {} // ignore per-frame errors
+    ).catch(err => {
+      setStatus('⚠️ Camera access denied. Use manual lookup below.', '#ef4444', '#fef2f2');
+    });
+  }
+
+  function onScanSuccess(decodedText) {
+    if (scanLocked) return;
+    // Accept BKG- references or raw text
+    const ref = decodedText.trim().toUpperCase();
+    if (!ref) return;
+    scanLocked = true;
+
+    // Pause scanner
+    if (scanner) scanner.pause();
+
+    // Vibrate feedback
+    if (navigator.vibrate) navigator.vibrate(100);
+
+    lookupBooking(ref);
+  }
+
+  // ── Lookup booking via API ─────────────────────────────────────────────────
+  async function lookupBooking(ref) {
+    setStatus('🔍 Looking up booking…', '#1e40af', '#eff6ff');
+
+    try {
+      const res  = await fetch(`/scan/lookup/${encodeURIComponent(ref)}`, {
+        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message || 'Booking not found.');
+
+      lastRef = ref;
+      showResult(data.booking);
+    } catch (e) {
+      setStatus(`❌ ${e.message}`, '#ef4444', '#fef2f2');
+      setTimeout(() => {
+        setStatus('📷 Point camera at QR code', null, null);
+        if (scanner) scanner.resume();
+        scanLocked = false;
+      }, 2500);
+    }
+  }
+
+  // ── Show booking result ────────────────────────────────────────────────────
+  function showResult(b) {
+    const statusColors = { pending:'#d97706', paid:'#15803d', failed:'#dc2626' };
+    const alreadyIn    = b.attended;
+
+    resultBody.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div style="font-weight:700;font-size:15px;">${b.customer_name || '—'}</div>
+        <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;
+                     background:${b.status==='paid'?'#f0fdf4':'#fffbeb'};
+                     color:${statusColors[b.status]||'#374151'};">
+          ${b.status.toUpperCase()}
+        </span>
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:4px;">${b.description || b.category || '—'}</div>
+      <div style="font-family:monospace;font-size:12px;color:var(--muted);margin-bottom:12px;">${b.reference}</div>
+      ${b.adults > 1 || b.children > 0 ? `
+        <div style="font-size:13px;margin-bottom:8px;">
+          🎟 ${b.adults} adult${b.adults!==1?'s':''}
+          ${b.children > 0 ? `· ${b.children} child${b.children!==1?'ren':''}` : ''}
+        </div>` : ''}
+      ${alreadyIn ? `
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;text-align:center;">
+          ✓ Already checked in at ${b.attended_at || '—'}
+        </div>` : ''}
+    `;
+
+    if (b.status !== 'paid') {
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Not paid';
+      confirmBtn.style.opacity = '.5';
+    } else if (alreadyIn) {
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = '✓ Already In';
+      confirmBtn.style.opacity = '.5';
     } else {
-      qrWrap.style.display = 'none';
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = '✓ Mark as Attended';
+      confirmBtn.style.opacity = '1';
     }
 
-    const statusColors = { pending:'#d97706', paid:'#15803d', failed:'#dc2626', cancelled:'#6b7280' };
-    const statusBg     = { pending:'#fffbeb', paid:'#f0fdf4', failed:'#fef2f2', cancelled:'#f3f4f6' };
-
-    let html = '';
-
-    // Status badge
-    html += `<div style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 12px;border-radius:20px;background:${statusBg[b.status]||'#f3f4f6'};color:${statusColors[b.status]||'#374151'};margin-bottom:16px;">
-      ${b.status.toUpperCase()}
-    </div>`;
-
-    // Customer
-    html += `<div class="detail-section">Customer</div>`;
-    html += row('Name',  b.customer_name);
-    html += row('Email', b.customer_email);
-    html += row('Phone', b.customer_phone);
-
-    // Booking
-    html += `<div class="detail-section">Booking</div>`;
-    html += row(MODE === 'ticket' ? 'Ticket Type' : MODE === 'reservation' ? 'Room / Space' : 'Service', b.category);
-    html += row('Amount', b.amount);
-    if (b.paid_at) html += row('Paid at', b.paid_at);
-    html += row('Booked on', b.created_at);
-
-    // Mode-specific
-    if (MODE === 'appointment') {
-      html += `<div class="detail-section">Schedule</div>`;
-      html += row('Date', b.preferred_date);
-      html += row('Time', b.preferred_time);
-      if (b.duration !== '—') html += row('Duration', b.duration);
-    }
-
-    if (MODE === 'ticket') {
-      html += `<div class="detail-section">Tickets</div>`;
-      html += row('Adults',   b.adults + ' × ' + b.unit_price);
-      if (b.children > 0) html += row('Children', b.children + ' × ' + b.unit_price);
-      html += row('Total', '₦' + ((parseInt(b.adults||1) + parseInt(b.children||0)) * parseFloat((b.unit_price||'₦0').replace(/[₦,]/g,''))).toLocaleString('en-NG', {minimumFractionDigits:2}));
-    }
-
-    if (MODE === 'reservation') {
-      html += `<div class="detail-section">Stay</div>`;
-      html += row('Check-in',  b.check_in);
-      html += row('Check-out', b.check_out);
-      html += row('Duration',  b.nights + ' {{ $modeConfig['rate_unit_label'] ?? 'night' }}' + (b.nights !== 1 ? 's' : ''));
-      html += row('Rate',      b.rate_per_unit + ' / {{ $modeConfig['rate_unit_label'] ?? 'night' }}');
-      html += row('Total',     b.total);
-    }
-
-    // Attendance
-    if (b.status === 'paid') {
-      html += `<div class="detail-section">{{ $modeConfig['attendance_label'] }}</div>`;
-      html += row('Status', b.attended
-        ? `<span style="color:#15803d;font-weight:700;">✓ Yes${b.attended_at ? ' · ' + b.attended_at : ''}</span>`
-        : '<span style="color:#d97706;">Not yet</span>');
-      if (b.attendance_note) html += row('Note', b.attendance_note);
-    }
-
-    document.getElementById('dp-body').innerHTML = html;
-    document.getElementById('detail-overlay').classList.add('open');
-    document.getElementById('detail-panel').classList.add('open');
-    document.body.style.overflow = 'hidden';
+    resultCard.style.display = 'block';
+    setStatus(alreadyIn ? '⚠️ Already checked in' : '✅ Booking found — confirm below',
+              alreadyIn ? '#d97706' : '#15803d',
+              alreadyIn ? '#fffbeb' : '#f0fdf4');
   }
 
-  function row(label, value) {
-    if (!value || value === '—' || value === '') return '';
-    return `<div class="detail-row"><span class="detail-label">${label}</span><span class="detail-value">${value}</span></div>`;
+  // ── Confirm attendance ─────────────────────────────────────────────────────
+  async function confirmAttend() {
+    if (!lastRef) return;
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Processing…';
+
+    try {
+      const res  = await fetch(`/bookings/${encodeURIComponent(lastRef)}/attend`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+        body: JSON.stringify({ attended: true }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message || 'Failed.');
+
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+      setStatus('🎉 Checked in!', '#15803d', '#f0fdf4');
+      confirmBtn.textContent = '✓ Done!';
+
+      setTimeout(resetScanner, 2000);
+    } catch (e) {
+      setStatus(`❌ ${e.message}`, '#ef4444', '#fef2f2');
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = '✓ Mark as Attended';
+    }
   }
 
-  function closeDetail() {
-    document.getElementById('detail-overlay').classList.remove('open');
-    document.getElementById('detail-panel').classList.remove('open');
-    document.body.style.overflow = '';
+  // ── Manual lookup ──────────────────────────────────────────────────────────
+  function lookupManual() {
+    const ref = document.getElementById('manual-ref').value.trim();
+    if (!ref) return;
+    scanLocked = true;
+    if (scanner) scanner.pause();
+    lookupBooking(ref);
   }
 
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+  // ── Reset ──────────────────────────────────────────────────────────────────
+  function resetScanner() {
+    lastRef    = null;
+    scanLocked = false;
+    resultCard.style.display = 'none';
+    resultBody.innerHTML     = '';
+    setStatus('📷 Point camera at QR code', null, null);
+    if (scanner) scanner.resume();
+  }
+
+  function setStatus(text, color, bg) {
+    statusEl.textContent = text;
+    statusEl.style.color      = color || 'var(--muted)';
+    statusEl.style.background = bg    || 'var(--soft)';
+    statusEl.style.borderColor = color ? color + '33' : 'var(--border)';
+  }
+
+  // Start
+  startScanner();
 </script>
-@endpush
+
+@endsection
