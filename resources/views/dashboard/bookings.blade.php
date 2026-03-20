@@ -114,7 +114,7 @@
                         {{ $b->preferred_time ? \Carbon\Carbon::parse($b->preferred_time)->format('g:i A') : '—' }}
                     </td>
                     <td style="font-weight:700; font-size:13px; white-space:nowrap;">
-                        ₦{{ number_format($b->amount / 100, 2) }}
+                        ₦{{ number_format($b->amount , 2) }}
                     </td>
                     <td>@include('components.status-badge', ['status' => $b->status])</td>
                     <td>
@@ -212,18 +212,18 @@
                     </td>
                     <td style="text-align:center;">
                         <span style="font-weight:700; font-size:14px;">{{ $b->adults }}</span>
-                        <div style="font-size:11px; color:var(--muted);">₦{{ number_format($adultPrice / 100, 0) }} ea</div>
+                        <div style="font-size:11px; color:var(--muted);">₦{{ number_format($adultPrice , 0) }} ea</div>
                     </td>
                     <td style="text-align:center;" class="hide-mobile">
                         @if($b->children > 0)
                             <span style="font-weight:700; font-size:14px;">{{ $b->children }}</span>
-                            <div style="font-size:11px; color:var(--muted);">₦{{ number_format($childPrice / 100, 0) }} ea</div>
+                            <div style="font-size:11px; color:var(--muted);">₦{{ number_format($childPrice , 0) }} ea</div>
                         @else
                             <span style="color:var(--border);">—</span>
                         @endif
                     </td>
                     <td style="text-align:right; font-weight:700; font-size:14px; white-space:nowrap;">
-                        ₦{{ number_format($total / 100, 2) }}
+                        ₦{{ number_format($total , 2) }}
                     </td>
                     <td>@include('components.status-badge', ['status' => $b->status])</td>
                     <td>
@@ -342,10 +342,10 @@
                     </td>
                     <td style="text-align:center;" class="hide-mobile">
                         <span style="font-weight:700; font-size:14px;">{{ $nights }}</span>
-                        <div style="font-size:11px; color:var(--muted);">₦{{ number_format($b->amount / 100, 0) }}/n</div>
+                        <div style="font-size:11px; color:var(--muted);">₦{{ number_format($b->amount , 0) }}/n</div>
                     </td>
                     <td style="text-align:right; font-weight:700; font-size:14px; white-space:nowrap;">
-                        ₦{{ number_format($total / 100, 2) }}
+                        ₦{{ number_format($total , 2) }}
                     </td>
                     <td>@include('components.status-badge', ['status' => $b->status])</td>
                     <td>
@@ -460,7 +460,7 @@
       customer_email: '{{ $b->customer_email }}',
       customer_phone: '{{ $b->customer_phone ?: '—' }}',
       category:       '{{ $b->category?->name ?? $b->description }}',
-      amount:         '₦{{ number_format($b->amount / 100, 2) }}',
+      amount:         '₦{{ number_format($b->amount , 2) }}',
       status:         '{{ $b->status }}',
       attended:       {{ $b->attended ? 'true' : 'false' }},
       attended_at:    '{{ $b->attended_at?->format('d M Y, H:i') ?? '' }}',
@@ -474,13 +474,13 @@
       @elseif($modeConfig['mode'] === 'ticket')
       adults:         {{ $b->adults ?? 1 }},
       children:       {{ $b->children ?? 0 }},
-      unit_price:     '₦{{ number_format($b->amount / 100, 2) }}',
+      unit_price:     '₦{{ number_format($b->amount , 2) }}',
       @elseif($modeConfig['mode'] === 'reservation')
       check_in:       '{{ $b->check_in?->format('d M Y') ?? '—' }}',
       check_out:      '{{ $b->check_out?->format('d M Y') ?? '—' }}',
       nights:         {{ $b->nights() ?? 0 }},
-      rate_per_unit:  '₦{{ number_format($b->amount / 100, 2) }}',
-      total:          '₦{{ $b->check_in && $b->check_out ? number_format(($b->amount * $b->nights()) / 100, 2) : number_format($b->amount / 100, 2) }}',
+      rate_per_unit:  '₦{{ number_format($b->amount , 2) }}',
+      total:          '₦{{ $b->check_in && $b->check_out ? number_format(($b->amount * $b->nights()) , 2) : number_format($b->amount , 2) }}',
       @endif
     },
     @endforeach

@@ -53,12 +53,10 @@
     <div id="result-card" style="display:none; margin-top:20px;" class="card">
         <div id="result-content"></div>
         <div style="display:flex; gap:10px; margin-top:16px;">
-            <button id="btn-confirm" onclick="confirmAttend()"
-                    class="btn btn-primary btn-sm" style="flex:1;">
+            <button id="btn-confirm" class="btn btn-primary btn-sm" style="flex:1;">
                 ✓ Mark as Attended
             </button>
-            <button onclick="resetScanner()"
-                    class="btn btn-outline btn-sm">
+            <button id="btn-reset" class="btn btn-outline btn-sm">
                 Scan Again
             </button>
         </div>
@@ -260,6 +258,8 @@
     statusEl.style.borderColor = color ? color + '33' : 'var(--border)';
   }
 
+  document.getElementById('btn-confirm').addEventListener('click', confirmAttend);
+  document.getElementById('btn-reset').addEventListener('click', resetScanner);
   // Start
   startScanner();
 
