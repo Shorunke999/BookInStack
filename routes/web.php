@@ -67,7 +67,7 @@ Route::middleware('auth')->group(function () {
         $modeConfig = $developer->modeConfig();
         $categories = $developer->bookingCategories()->where('booking_mode', $developer->booking_mode)->get();
         $bookings = $devloper->bookings()->where('booking_mode', $developer->booking_mode)->get();
-        return view('dashboard.scan', compact('modeConfig','categories'));
+        return view('dashboard.scan', compact('modeConfig','categories','bookings'));
     })->name('scan');
  
     Route::get('/scan/lookup/{reference}', function (string $reference) {
