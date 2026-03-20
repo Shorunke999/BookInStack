@@ -205,18 +205,19 @@
 
   // ── Confirm attendance ─────────────────────────────────────────────────────
   async function confirmAttend() {
+    console.log('in the confirmAttend mehod');
     if (!lastRef) return;
     confirmBtn.disabled = true;
     confirmBtn.textContent = 'Processing…';
 
     try {
-      const res  = await fetch(`/bookings/api/${lastRef}/attend`, {
+      const res  = await fetch(`/bookings/api/${encodeURIComponent(lastRef)}/attend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
         body: JSON.stringify({ attended: true }),
       });
       const data = await res.json();
-
+       console.log('data from the confirm method', data);
       if (!res.ok) throw new Error(data.message || 'Failed.');
 
       if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
@@ -225,6 +226,7 @@
 
       setTimeout(resetScanner, 2000);
     } catch (e) {
+      console.log('error from the confirm method', data);
       setStatus(`❌ ${e.message}`, '#ef4444', '#fef2f2');
       confirmBtn.disabled = false;
       confirmBtn.textContent = '✓ Mark as Attended';
