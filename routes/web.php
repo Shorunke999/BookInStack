@@ -66,7 +66,7 @@ Route::middleware('auth')->group(function () {
         $developer = auth()->user()->effectiveDeveloper();
         $modeConfig = $developer->modeConfig();
         $categories = $developer->bookingCategories()->where('booking_mode', $developer->booking_mode)->get();
-        $bookings = $devloper->bookings()->where('booking_mode', $developer->booking_mode)->get();
+        $bookings = $developer->bookings()->where('booking_mode', $developer->booking_mode)->get();
         return view('dashboard.scan', compact('modeConfig','categories','bookings'));
     })->name('scan');
  
