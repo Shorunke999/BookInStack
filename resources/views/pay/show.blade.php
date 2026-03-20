@@ -225,7 +225,7 @@
   let adults = 1, children = 0;
 
   function fmt(kobo) {
-    return '₦' + (kobo / 100).toLocaleString('en-NG', { minimumFractionDigits: 2 });
+    return '₦' + (kobo).toLocaleString('en-NG', { minimumFractionDigits: 2 });
   }
 
   // ── Reservation ───────────────────────────────────────────
