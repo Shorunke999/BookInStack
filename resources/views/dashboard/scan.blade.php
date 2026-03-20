@@ -210,13 +210,12 @@
     confirmBtn.textContent = 'Processing…';
 
     try {
-      const res  = await fetch(`/bookings/api/${encodeURIComponent(lastRef)}/attend`, {
+      const res  = await fetch(`/bookings/${encodeURIComponent(lastRef)}/attend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
         body: JSON.stringify({ attended: true }),
       });
       const data = await res.json();
-       console.log('data from the confirm method', data);
       if (!res.ok) throw new Error(data.message || 'Failed.');
 
       if (navigator.vibrate) navigator.vibrate([100, 50, 100]);

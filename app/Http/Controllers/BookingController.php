@@ -279,7 +279,7 @@ class BookingController extends Controller
      */
     public function dashboardMarkAttended(Request $request, string $reference): RedirectResponse
     {
-        $developer = $request->user();
+        $developer = $request->user()->effectiveDeveloper();
 
         $booking = Booking::where('reference', $reference)
             ->where('developer_id', $developer->id)
@@ -290,13 +290,14 @@ class BookingController extends Controller
             'attended' => 'required|boolean',
             'note' => 'nullable|string|max:500',
         ]);
-
-        $booking->update([
-            'attended' => $data['attended'],
-            'attended_at' => $data['attended'] ? now() : null,
-            'attendance_note' => $data['note'] ?? null,
-        ]);
-
+        if(!$booking->attended)
+        {
+            $booking->update([
+                'attended' => $data['attended'],
+                'attended_at' => $data['attended'] ? now() : null,
+                'attendance_note' => $data['note'] ?? null,
+            ]);
+        }  
         return back()->with('success', 'Attendance updated.');
     }
 

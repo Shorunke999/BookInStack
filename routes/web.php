@@ -52,8 +52,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/payments', [DashboardController::class, 'payments'])->name('dashboard.payments');
     Route::post('/bookings/{reference}/attend', [BookingController::class, 'dashboardMarkAttended'])
         ->name('bookings.attend');
-    Route::post('/bookings/api/{reference}/attend', [BookingController::class, 'markAttended'])
-    ->name('bookings.attend.api');
 
      
     // Payment links (dashboard)
