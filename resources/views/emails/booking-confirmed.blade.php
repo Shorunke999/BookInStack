@@ -322,9 +322,21 @@
     {{-- ── TICKET: QR code block ──────────────────────────── --}}
     @if($modeConfig['mode'] === 'ticket')
       <div class="ticket-block">
-        <div style="font-size:13px; color:#64748b; margin-bottom:4px; text-transform:uppercase; letter-spacing:.06em; font-weight:600;">
-          {{ $booking->description }}
+        {{-- Business name --}}
+        <div style="font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:.12em; font-weight:600; margin-bottom:6px;">
+          {{ $developer->business_name ?? $developer->name }}
         </div>
+
+        {{-- Ticket / event name --}}
+        <div style="font-size:17px; font-weight:800; color:#0d0d14; margin-bottom:2px; letter-spacing:-.2px;">
+          {{ $booking->category?->name ?? $booking->description }}
+        </div>
+        @if($booking->category?->description)
+          <div style="font-size:12px; color:#64748b; margin-bottom:8px;">
+            {{ $booking->category->description }}
+          </div>
+        @endif
+
         <div class="ticket-ref">{{ $booking->reference }}</div>
 
         {{-- QR Code --}}
@@ -485,9 +497,9 @@
     {{-- Ticket instructions --}}
     @if($modeConfig['mode'] === 'ticket')
       <div class="note-box">
-        🎫 <strong>Present this email or your reference code at entry.</strong>
-        Your reference <strong>{{ $booking->reference }}</strong> will be scanned or verified manually.
-        One email covers all {{ $booking->quantity }} ticket{{ $booking->quantity > 1 ? 's' : '' }}.
+        🎫 <strong>Your ticket is attached to this email as a PDF.</strong>
+        Download and save it — present it at entry (printed or on your phone).
+        Your reference <strong>{{ $booking->reference }}</strong> will be scanned at the gate.
       </div>
     @elseif($modeConfig['mode'] === 'reservation')
       <div class="note-box">
