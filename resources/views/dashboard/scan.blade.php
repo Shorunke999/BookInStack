@@ -87,7 +87,7 @@
   // const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
   //                   || window.innerWidth < 768;
 
-  const IS_MOBILE = false;
+  const IS_MOBILE = true;
   // ── Show correct UI based on device ────────────────────────────────────────
   document.getElementById(IS_MOBILE ? 'scanner-wrap' : 'desktop-block').style.display = 'block';
 
