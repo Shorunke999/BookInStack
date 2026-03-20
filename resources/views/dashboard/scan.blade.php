@@ -210,7 +210,7 @@
     confirmBtn.textContent = 'Processing…';
 
     try {
-      const res  = await fetch(`/bookings/api/${encodeURIComponent(lastRef)}/attend`, {
+      const res  = await fetch(`/bookings/api/${lastRef}/attend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
         body: JSON.stringify({ attended: true }),
