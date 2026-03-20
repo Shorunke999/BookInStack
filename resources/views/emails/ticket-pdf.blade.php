@@ -247,7 +247,7 @@
     <div class="detail-row">
       <div class="detail-label">Amount Paid</div>
       <div class="detail-value" style="color:#4f46e5;">
-        ₦{{ number_format(($booking->amount * max(1, ($booking->adults ?? 1) + ($booking->children ?? 0))) / 100, 2) }}
+        ₦{{ number_format(($booking->amount * max(1, ($booking->adults ?? 1) + ($booking->children ?? 0))) , 2) }}
       </div>
     </div>
 

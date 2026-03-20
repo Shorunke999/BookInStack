@@ -435,11 +435,11 @@
       @if($modeConfig['mode'] === 'ticket')
         <div class="detail-row">
           <span class="detail-label">Tickets</span>
-          <span class="detail-value">{{ $booking->quantity }} × ₦{{ number_format($booking->amount / 100, 2) }}</span>
+          <span class="detail-value">{{ $booking->quantity }} × ₦{{ number_format($booking->amount , 2) }}</span>
         </div>
         <div class="detail-row">
           <span class="detail-label">Total Paid</span>
-          <span class="detail-value amount">₦{{ number_format(($booking->amount * $booking->quantity) / 100, 2) }}</span>
+          <span class="detail-value amount">₦{{ number_format(($booking->amount * $booking->quantity) , 2) }}</span>
         </div>
 
       @elseif($modeConfig['mode'] === 'reservation')
@@ -457,7 +457,7 @@
         </div>
         <div class="detail-row">
           <span class="detail-label">Total Paid</span>
-          <span class="detail-value amount">₦{{ number_format(($booking->amount * $nights) / 100, 2) }}</span>
+          <span class="detail-value amount">₦{{ number_format(($booking->amount * $nights) , 2) }}</span>
         </div>
 
       @else
@@ -475,7 +475,7 @@
         @endif
         <div class="detail-row">
           <span class="detail-label">Amount Paid</span>
-          <span class="detail-value amount">₦{{ number_format($booking->amount / 100, 2) }}</span>
+          <span class="detail-value amount">₦{{ number_format($booking->amount , 2) }}</span>
         </div>
       @endif
 
