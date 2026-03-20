@@ -269,11 +269,11 @@
             </tbody>
         </table>
     </div>
-    @if($bookings->hasPages())
+    {{-- @if($bookings->hasPages())
         <div style="padding:14px 20px; border-top:1px solid var(--border);">
             {{ $bookings->withQueryString()->links('components.pagination') }}
         </div>
-    @endif
+    @endif --}}
 </div>
 @endif
 
