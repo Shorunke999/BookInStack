@@ -4,17 +4,6 @@
 
 @section('content')
 
-@if(session('success'))
-    <div style="background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;border-radius:8px;padding:12px 16px;font-size:14px;margin-bottom:20px;">✓ {{ session('success') }}</div>
-@endif
-
-<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
-    <p style="font-size:13px;color:var(--muted);max-width:500px;line-height:1.6;">
-        Generate a payment link after negotiating with a customer — share via WhatsApp, SMS or email. Payment goes straight to your account.
-    </p>
-    <a href="{{ route('payment-links.create') }}" class="btn btn-primary btn-sm">+ New Payment Link</a>
-</div>
-
 <div class="card" style="padding:0;overflow:hidden;">
     <div class="table-wrap">
         <table>

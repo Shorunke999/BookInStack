@@ -63,11 +63,13 @@ Route::middleware('auth')->group(function () {
     
      // QR Scanner — mobile only, all roles
     Route::get('/scan', function () {
-        return view('dashboard.scan');
+         $developer = $request->get('developer');
+        $modeConfig = $developer->modeConfig();
+        return view('dashboard.scan', compact($modeConfig));
     })->name('scan');
  
     Route::get('/scan/lookup/{reference}', function (string $reference) {
-        $developer = auth()->user()->effectiveDeveloper();
+        $developer = $request->get('developer');
         $booking   = \App\Models\Booking::where('reference', $reference)
             ->where('developer_id', $developer->id)
             ->with('category')
