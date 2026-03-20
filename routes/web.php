@@ -8,7 +8,6 @@ use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Dashboard\NinController;
 use App\Http\Controllers\Dashboard\StaffController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Http\Request;
 
 /*
 |--------------------------------------------------------------------------
@@ -63,14 +62,14 @@ Route::middleware('auth')->group(function () {
     Route::post  ('/payment-links/{token}/cancel', [PaymentLinkController::class, 'cancel'])->name('payment-links.cancel');
     
      // QR Scanner — mobile only, all roles
-    Route::get('/scan', function (Request $request) {
-         $developer = $request->get('developer');
+    Route::get('/scan', function () {
+        $developer = auth()->user()->effectiveDeveloper();
         $modeConfig = $developer->modeConfig();
-        return view('dashboard.scan', compact($modeConfig));
+        return view('dashboard.scan', compact('modeConfig'));
     })->name('scan');
  
-    Route::get('/scan/lookup/{reference}', function (Request $request,string $reference) {
-        $developer = $request->get('developer');
+    Route::get('/scan/lookup/{reference}', function (string $reference) {
+        $developer = auth()->user()->effectiveDeveloper();
         $booking   = \App\Models\Booking::where('reference', $reference)
             ->where('developer_id', $developer->id)
             ->with('category')

@@ -51,7 +51,6 @@ class PaymentLinkController extends Controller
             'note'           => 'nullable|string|max:500',
             'expires_hours'  => 'nullable|integer|min:1|max:720',
         ]);
-
         $link = PaymentLink::create([
             'token'          => PaymentLink::generateToken(),
             'developer_id'   => $developer->id,

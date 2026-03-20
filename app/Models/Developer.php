@@ -153,6 +153,10 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
     {
         return $this->role === 'staff';
     }
+     public function effectiveDeveloper(): Developer
+    {
+        return $this->isStaff() ? $developer->owner : $developer;
+    }
        public function getEmailForPasswordReset(): string
     {
         return $this->email;
