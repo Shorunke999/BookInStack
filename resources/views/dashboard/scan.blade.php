@@ -82,10 +82,9 @@
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
 <script>
-  // const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
-  //                   || window.innerWidth < 768;
+  const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+                    || window.innerWidth < 768;
 
-  const IS_MOBILE = true;
   // ── Show correct UI based on device ────────────────────────────────────────
   document.getElementById(IS_MOBILE ? 'scanner-wrap' : 'desktop-block').style.display = 'block';
 
@@ -213,7 +212,7 @@
       const res  = await fetch(`/bookings/${encodeURIComponent(lastRef)}/attend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-        body: JSON.stringify({ attended: true }),
+        body: JSON.stringify({ attended: true, isApi: true }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed.');

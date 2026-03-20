@@ -14,6 +14,11 @@ class BookingCategory extends Model
         'child_price', 'duration_minutes', 'capacity',
         'enable_child_pricing', 'max_per_order', 'total_slots',
         'sort_order', 'status',
+
+          // Check-in window
+        'checkin_start_date', 'checkin_end_date',
+        'checkin_start_time', 'checkin_end_time',
+        'checkin_days_before', 'checkin_days_after',
     ];
 
     protected $casts = [
@@ -23,6 +28,11 @@ class BookingCategory extends Model
         'child_price'          => 'integer',
         'min_price'            => 'integer',
         'max_price'            => 'integer',
+
+         'checkin_start_date'   => 'date',
+    'checkin_end_date'     => 'date',
+    'checkin_days_before'  => 'integer',
+    'checkin_days_after'   => 'integer',
     ];
 
     // ── Relationships ──────────────────────────────────────────────────────────

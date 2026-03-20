@@ -119,6 +119,59 @@
             </div>
         </div>
     @endif
+    {{-- Check-in window --}}
+    <div style="margin-top:14px;padding:12px 14px;background:#f8fafc;border:1px solid var(--border);border-radius:8px;">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">
+            Check-in Window <span style="font-weight:400;font-style:italic;">(optional)</span>
+        </div>
+
+        @if($mode === 'ticket')
+        {{-- Fixed date + time window for ticket events --}}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;">
+            <div class="form-group" style="margin-bottom:0;">
+                <label style="font-size:11px;">Check-in Opens (Date)</label>
+                <input type="date" name="checkin_start_date" class="form-control"
+                    value="{{ $category?->checkin_start_date ?? '' }}" />
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label style="font-size:11px;">Check-in Closes (Date)</label>
+                <input type="date" name="checkin_end_date" class="form-control"
+                    value="{{ $category?->checkin_end_date ?? '' }}" />
+            </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="form-group" style="margin-bottom:0;">
+                <label style="font-size:11px;">Opens at (Time)</label>
+                <input type="time" name="checkin_start_time" class="form-control"
+                    value="{{ $category?->checkin_start_time ?? '' }}" />
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label style="font-size:11px;">Closes at (Time)</label>
+                <input type="time" name="checkin_end_time" class="form-control"
+                    value="{{ $category?->checkin_end_time ?? '' }}" />
+            </div>
+        </div>
+        @else
+        {{-- Relative days window for reservation + appointment --}}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="form-group" style="margin-bottom:0;">
+                <label style="font-size:11px;">Allow check-in X days before</label>
+                <input type="number" name="checkin_days_before" class="form-control"
+                    value="{{ $category?->checkin_days_before ?? 0 }}"
+                    min="0" max="30" style="max-width:100px;" />
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label style="font-size:11px;">Allow check-in X days after</label>
+                <input type="number" name="checkin_days_after" class="form-control"
+                    value="{{ $category?->checkin_days_after ?? 0 }}"
+                    min="0" max="30" style="max-width:100px;" />
+            </div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;">
+            e.g. "1 day before" allows early check-in the day prior. "1 day after" gives a grace period.
+        </div>
+        @endif
+    </div>
 </div>
 
 {{-- ── Mode-specific fields ────────────────────────────────────────────────── --}}
