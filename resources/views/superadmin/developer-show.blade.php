@@ -6,7 +6,7 @@
 
 
 <div style="margin-bottom:16px;">
-    <a href="{{ route('superadmin.developers') }}" style="font-size:13px;color:var(--muted);">← Back to Developers</a>
+    <a href="{{ route('superadmin.developers') }}" style="font-size:13px;color:var(--muted);">← Back to Businessess</a>
 </div>
 
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
@@ -59,7 +59,7 @@
                         <strong style="color:var(--accent);">₦{{ number_format(100000 * $fee / 100, 2) }}</strong>
                     </div>
                     <div style="display:flex;justify-content:space-between;font-size:13px;margin-top:4px;">
-                        <span>Developer receives</span>
+                        <span>Businesses receives</span>
                         <strong>₦{{ number_format(100000 * (1 - $fee/100), 2) }}</strong>
                     </div>
                 </div>
@@ -93,7 +93,7 @@
         @foreach([
             ['Total Volume','₦'.number_format($totalPaid/100,2),'💰'],
             ['Platform Earned','₦'.number_format($platformEarned/100,2),'🏦'],
-            ['Developer Received','₦'.number_format(($totalPaid-$platformEarned)/100,2),'💳'],
+            ['Businesses Received','₦'.number_format(($totalPaid-$platformEarned)/100,2),'💳'],
         ] as [$label,$value,$icon])
             <div style="text-align:center;padding:16px;background:var(--soft);border-radius:8px;">
                 <div style="font-size:24px;margin-bottom:6px;">{{ $icon }}</div>

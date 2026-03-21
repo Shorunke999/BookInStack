@@ -30,8 +30,8 @@
     </div>
 
     {{-- Camera viewfinder --}}
-    <div style="position:relative; border-radius:14px; overflow:hidden; background:#000; aspect-ratio:1;">
-        <div id="qr-reader" style="width:100%;"></div>
+    <div style="position:relative; border-radius:14px; overflow:hidden; background:#000; width:100%; height:300px;">
+        <div id="qr-reader" style="width:100%; height:100%;"></div>
 
         {{-- Corner guides --}}
         <div style="position:absolute; inset:16px; pointer-events:none;">
@@ -263,5 +263,12 @@
 
   } // end IS_MOBILE
 </script>
-
+@push('styles')
+<style>
+    #qr-reader { border: none !important; }
+    #qr-reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+    #qr-reader__scan_region { margin: 0 !important; padding: 0 !important; }
+    #qr-reader__dashboard { display: none !important; }
+</style>
+@endpush
 @endsection

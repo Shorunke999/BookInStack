@@ -26,7 +26,7 @@
         <table>
             <thead>
                 <tr>
-                    <th>Developer</th>
+                    <th>Businesses</th>
                     <th>Mode</th>
                     <th style="text-align:right;">Volume</th>
                     <th style="text-align:center;">Fee %</th>
@@ -85,7 +85,7 @@
                         <td><a href="{{ route('superadmin.developers.show', $dev->id) }}" style="font-size:12px;color:var(--accent);">Details →</a></td>
                     </tr>
                 @empty
-                    <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted);">No developers found.</td></tr>
+                    <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted);">No Businessess found.</td></tr>
                 @endforelse
             </tbody>
         </table>

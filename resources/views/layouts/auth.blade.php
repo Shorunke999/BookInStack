@@ -288,7 +288,7 @@
 
             <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px;">
                 @foreach([
-                    ['💳','Payments straight to your bank account — 95% is yours'],
+                    ['💳','Payments straight to your bank account'],
                     ['📋','Manage all bookings from one simple dashboard'],
                     ['🎟','QR tickets, staff check-in, attendance tracking'],
                     ['💬','Let customers negotiate price via WhatsApp'],
@@ -303,10 +303,6 @@
     </div>
 
     <div class="auth-stats">
-        <div class="auth-stat">
-            <div class="num">95%</div>
-            <div class="lbl">Yours per booking</div>
-        </div>
         <div class="auth-stat">
             <div class="num">₦0</div>
             <div class="lbl">Monthly fee</div>

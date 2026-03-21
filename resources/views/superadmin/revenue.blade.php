@@ -9,7 +9,7 @@
     @foreach([
         ['Total Volume','₦'.number_format($totals['volume']/100,2),'💰',''],
         ['Platform Earned','₦'.number_format($totals['platform']/100,2),'🏦','color:var(--accent);'],
-        ['Paid to Developers','₦'.number_format($totals['payout']/100,2),'💳',''],
+        ['Paid to Businessess','₦'.number_format($totals['payout']/100,2),'💳',''],
     ] as [$l,$v,$i,$s])
         <div class="card" style="text-align:center;padding:24px;">
             <div style="font-size:32px;margin-bottom:8px;">{{ $i }}</div>
@@ -22,17 +22,17 @@
 {{-- Per-developer breakdown --}}
 <div class="card" style="padding:0;overflow:hidden;">
     <div style="padding:14px 18px;border-bottom:1px solid var(--border);">
-        <h3 style="font-size:14px;">Per Developer Breakdown</h3>
+        <h3 style="font-size:14px;">Per Businesses Breakdown</h3>
     </div>
     <div class="table-wrap">
         <table>
             <thead>
                 <tr>
-                    <th>Developer</th>
+                    <th>Businesses</th>
                     <th style="text-align:center;">Fee %</th>
                     <th style="text-align:right;">Volume</th>
                     <th style="text-align:right;">Platform Earned</th>
-                    <th style="text-align:right;">Developer Received</th>
+                    <th style="text-align:right;">Businesses Received</th>
                     <th></th>
                 </tr>
             </thead>

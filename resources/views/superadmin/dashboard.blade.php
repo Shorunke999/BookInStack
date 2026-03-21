@@ -7,8 +7,8 @@
 {{-- ── Stat cards ────────────────────────────────────────────────────────── --}}
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px;">
     @foreach([
-        ['Total Developers', $stats['total_developers'], '👥', null],
-        ['Active Developers',$stats['active_developers'],'✅', null],
+        ['Total Businessess', $stats['total_developers'], '👥', null],
+        ['Active Businessess',$stats['active_developers'],'✅', null],
         ['Total Bookings',   $stats['total_bookings'],   '📋', null],
         ['Paid Bookings',    $stats['paid_bookings'],    '💳', null],
         ['Platform Volume',  '₦'.number_format($stats['total_revenue']/100,2), '💰', null],
@@ -27,7 +27,7 @@
     {{-- Recent developers --}}
     <div class="card" style="padding:0;overflow:hidden;">
         <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-            <h3 style="font-size:14px;">Recent Developers</h3>
+            <h3 style="font-size:14px;">Recent Businessess</h3>
             <a href="{{ route('superadmin.developers') }}" style="font-size:12px;color:var(--accent);">View all →</a>
         </div>
         <div class="table-wrap">

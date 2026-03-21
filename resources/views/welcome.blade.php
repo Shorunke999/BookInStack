@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BookStackIn — Bookings & Payments for Developers</title>
+    <title>BookInStack — Bookings & Payments for Businessess</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <style>
@@ -669,7 +669,7 @@
 <!-- Footer -->
 <footer>
     <div class="logo">BookIn<span>Stack</span></div>
-    <p>© {{ date('Y') }} BookStackIn. Built for Nigerian developers.</p>
+    <p>© {{ date('Y') }} BookInStack. Built for Nigerian Businesses.</p>
 </footer>
 
 </body>

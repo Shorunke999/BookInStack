@@ -78,7 +78,7 @@
                 Send via WhatsApp
             </a>
 
-            <a href="mailto:{{ $link->customer_email }}?subject=Payment Link — {{ $link->description }}&body={{ urlencode($link->whatsappText()) }}"
+            <a href="mailto:{{ $link->customer_email }}?subject=Payment%20Link%20%E2%80%94%20{{ rawurlencode($link->description) }}&body={{ rawurlencode($link->whatsappText()) }}"
                style="display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);color:var(--ink);padding:10px 20px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;">
                 📧 Send via Email
             </a>

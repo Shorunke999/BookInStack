@@ -108,8 +108,8 @@
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;">
                     <span style="font-size:13px;color:var(--muted);">Settlement Split</span>
                     <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                        <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;background:#f0fdf4;color:#15803d;">95% to you</span>
-                        <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;background:#f3f4f6;color:#6b7280;">{{ $developer->platform_fee_percent ?? 5 }}% platform</span>
+                        <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;background:#f0fdf4;color:#15803d;">{{100 - $developer->platform_fee_percent}}% to you</span>
+                        <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;background:#f3f4f6;color:#6b7280;">{{ $developer->platform_fee_percent }}% platform</span>
                     </div>
                 </div>
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;flex-wrap:wrap;">

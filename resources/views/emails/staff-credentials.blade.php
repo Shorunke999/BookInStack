@@ -28,7 +28,7 @@
 <div class="wrap">
 
     <div class="header">
-        <div class="header-brand">BookStack</div>
+        <div class="header-brand">BookInStack</div>
         <div class="header-sub">Staff Account Credentials</div>
     </div>
 
@@ -36,7 +36,7 @@
         <h2>Welcome, {{ $staff->name }} 👋</h2>
         <p>
             <strong>{{ $admin->business_name }}</strong> has added you as a staff member
-            on their BookStack account. Use the credentials below to log in.
+            on their BookInStack account. Use the credentials below to log in.
         </p>
 
         <div class="creds">
@@ -65,7 +65,7 @@
     </div>
 
     <div class="footer">
-        This email was sent by BookStack on behalf of {{ $admin->business_name }}.
+        This email was sent by BookInStack on behalf of {{ $admin->business_name }}.
         If you weren't expecting this, please ignore it.
     </div>
 
