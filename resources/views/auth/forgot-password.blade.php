@@ -33,7 +33,7 @@
             @enderror
         </div>
 
-        <button type="submit" class="btn-block">
+        <button type="submit" class="btn-submit">
             Send Reset Link
         </button>
     </form>

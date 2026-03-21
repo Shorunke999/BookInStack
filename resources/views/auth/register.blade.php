@@ -117,7 +117,7 @@
             </div>
         </div>
 
-        <button type="submit" class="btn-block">Create Account</button>
+        <button type="submit" class="btn-submit">Create Account</button>
     </form>
 
     <div class="auth-footer">

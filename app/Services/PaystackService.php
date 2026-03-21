@@ -9,8 +9,6 @@ class PaystackService
 {
     private const BASE_URL = 'https://api.paystack.co';
 
-    private const SPLIT_RATIO = 0.01; // 5% platform fee
-
     private PendingRequest $http;
 
     public function __construct()
@@ -29,11 +27,12 @@ class PaystackService
      */
     public function createSubaccount(array $data): array
     {
+        $developer = auth()->user()->effectiveDeveloper();
         $response = $this->http->post('/subaccount', [
             'business_name' => $data['business_name'],
             'settlement_bank' => $data['bank_code'],
             'account_number' => $data['account_number'],
-            'percentage_charge' => self::SPLIT_RATIO * 100, // 5 (Paystack uses integer %)
+            'percentage_charge' => $developer->platform_fee_percent, // 5 (Paystack uses integer %)
             'description' => "BookStackIn subaccount for {$data['business_name']}",
             'primary_contact_email' => $data['email'],
         ]);

@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'public.key' => \App\Http\Middleware\VerifyPublicKey::class,
             'admin' => \App\Http\Middleware\EnsureIsAdmin::class,
+            'superadmin' => \App\Http\Middleware\SuperAdmin::class,
         ]);
 
     })

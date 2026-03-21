@@ -576,23 +576,30 @@
     </div>
 
     <nav class="sidebar-nav">
+        @if(auth()->user()->isSuperAdmin())
+            <div class="nav-section-label" style="margin-top:4px;color:var(--accent);font-size:9px;">SUPERADMIN</div>
+            @include('components.nav-item', ['route'=>'superadmin.dashboard',  'label'=>'SA Dashboard', 'icon'=>'grid'])
+            @include('components.nav-item', ['route'=>'superadmin.developers', 'label'=>'Developers',   'icon'=>'users'])
+            @include('components.nav-item', ['route'=>'superadmin.revenue',    'label'=>'Revenue',      'icon'=>'credit-card'])
+        @else
+            <div class="nav-section-label">Main</div>
 
-        <div class="nav-section-label">Main</div>
-
-        @include('components.nav-item', ['route' => 'dashboard',          'label' => 'Overview',  'icon' => 'grid'])
-        @include('components.nav-item', ['route' => 'dashboard.bookings', 'label' => 'Bookings',  'icon' => 'list'])
-        @include('components.nav-item', ['route' => 'payment-links.index',   'label' => 'Payment Links',  'icon' => 'link'])
-         @if(preg_match('/Android|iPhone|iPad|iPod|Mobile/i', request()->header('User-Agent', '')))
-            @include('components.nav-item', ['route' => 'scan', 'label' => 'Scan QR', 'icon' => 'qr'])
+            @include('components.nav-item', ['route' => 'dashboard',          'label' => 'Overview',  'icon' => 'grid'])
+            @include('components.nav-item', ['route' => 'dashboard.bookings', 'label' => 'Bookings',  'icon' => 'list'])
+            @include('components.nav-item', ['route' => 'payment-links.index',   'label' => 'Payment Links',  'icon' => 'link'])
+            @if(preg_match('/Android|iPhone|iPad|iPod|Mobile/i', request()->header('User-Agent', '')))
+                @include('components.nav-item', ['route' => 'scan', 'label' => 'Scan QR', 'icon' => 'qr'])
+            @endif
+            
+            @if(auth()->user()->isAdmin())
+                <div class="nav-section-label" style="margin-top:8px;">Admin</div>
+                @include('components.nav-item', ['route' => 'dashboard.api-keys',        'label' => 'API Keys',    'icon' => 'key'])
+                @include('components.nav-item', ['route' => 'dashboard.integration',      'label' => 'Integration', 'icon' => 'code'])
+                @include('components.nav-item', ['route' => 'dashboard.booking-settings', 'label' => 'Settings',    'icon' => 'settings'])
+                @include('components.nav-item', ['route' => 'staff.index',                'label' => 'Staff',       'icon' => 'users'])
+            @endif
         @endif
-           
-        @if(auth()->user()->isAdmin())
-            <div class="nav-section-label" style="margin-top:8px;">Admin</div>
-            @include('components.nav-item', ['route' => 'dashboard.api-keys',        'label' => 'API Keys',    'icon' => 'key'])
-            @include('components.nav-item', ['route' => 'dashboard.integration',      'label' => 'Integration', 'icon' => 'code'])
-            @include('components.nav-item', ['route' => 'dashboard.booking-settings', 'label' => 'Settings',    'icon' => 'settings'])
-            @include('components.nav-item', ['route' => 'staff.index',                'label' => 'Staff',       'icon' => 'users'])
-        @endif
+      
 
     </nav>
 

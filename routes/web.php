@@ -136,6 +136,17 @@ Route::middleware('auth')->group(function () {
         })->name('api.verify-account');
     });
 
+    // ── Superadmin ────────────────────────────────────────────────────────────────
+Route::middleware(['superadmin'])->prefix('superadmin')->name('superadmin.')->group(function () {
+    Route::get('/',                              [\App\Http\Controllers\SuperAdmin\SuperAdminController::class, 'index'])      ->name('dashboard');
+    Route::get('/developers',                    [\App\Http\Controllers\SuperAdmin\SuperAdminController::class, 'developers']) ->name('developers');
+    Route::patch('/developers/{id}/fee',         [\App\Http\Controllers\SuperAdmin\SuperAdminController::class, 'updateFee']) ->name('developers.fee');
+    Route::patch('/developers/{id}/status',      [\App\Http\Controllers\SuperAdmin\SuperAdminController::class, 'updateStatus']) ->name('developers.status');
+    Route::get('/developers/{id}',               [\App\Http\Controllers\SuperAdmin\SuperAdminController::class, 'showDeveloper']) ->name('developers.show');
+    Route::get('/bookings',                      [\App\Http\Controllers\SuperAdmin\SuperAdminController::class, 'bookings'])   ->name('bookings');
+    Route::get('/revenue',                       [\App\Http\Controllers\SuperAdmin\SuperAdminController::class, 'revenue'])    ->name('revenue');
+});
+
 });
 
 // ─── Redirect root to dashboard ──────────────────────────────────────────────

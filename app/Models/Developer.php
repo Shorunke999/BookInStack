@@ -44,7 +44,8 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
          'widget_config',
          'reservation_unit',
          'enable_negotiate',
-            'whatsapp_number'
+            'whatsapp_number',
+            'platform_fee_percent',
 
     ];
 
@@ -61,7 +62,8 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
         'enable_booking_window' => 'boolean',
         'booking_window' => 'array',
         'email_verified_at' => 'datetime',
-         'widget_config'=> 'array'
+         'widget_config'=> 'array',
+         'platform_fee_percent' => 'decimal:2',
     ];
 
     // ─── Relationships ──────────────────────────────────────────────────────────
@@ -157,6 +159,10 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
     {
         return $this->isStaff() ? $this->owner : $this;
     }
+    public function isSuperAdmin(): bool
+{
+    return $this->email === config('app.superadmin_email');
+}
        public function getEmailForPasswordReset(): string
     {
         return $this->email;
@@ -170,7 +176,17 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
             : $this->paystack_subaccount_code;
     }
 
+    // Helper method — add to model:
+    public function platformFeeKobo(int $amountKobo): int
+    {
+        $percent = $this->platform_fee_percent ?? 5.00;
+        return (int) round($amountKobo * ($percent / 100));
+    }
 
+    public function developerShareKobo(int $amountKobo): int
+    {
+        return $amountKobo - $this->platformFeeKobo($amountKobo);
+    }
     /**
      * Full config for the current booking mode.
      * Used by the API status endpoint and dashboard views.

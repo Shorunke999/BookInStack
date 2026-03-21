@@ -34,7 +34,7 @@
         @if($email)
             <input type="hidden" name="email" value="{{ $email }}" />
         @endif
-        <button type="submit" class="btn-block" style="width:100%;">
+        <button type="submit" class="btn-submit" style="width:100%;">
             Resend Verification Email
         </button>
     </form>

@@ -28,8 +28,14 @@ class DashboardController extends Controller
         {
             return redirect()->route('login');
         }
-
         $developer = $this->effectiveDeveloper($request);
+
+        //redirect super admin
+        if($developer->isSuperAdmin())
+        {
+            return redirect()->route('superadmin.dashboard');
+        }
+        
         $bookin_mode = $developer->booking_mode;
         $stats = [
 

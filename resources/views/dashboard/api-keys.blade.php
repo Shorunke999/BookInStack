@@ -1,87 +1,61 @@
 @extends('layouts.app')
-
 @section('title', 'API Keys')
 @section('page-title', 'API Keys')
 
 @section('content')
 
-@if(! $developer->nin_verified)
-    {{-- ── NIN Verification Form ───────────────────────────────────────────── --}}
-    <div style="max-width:560px;">
-        <div class="card">
-            <h3 style="font-size:16px; margin:0 0 6px;">Verify Your Identity</h3>
-            <p style="color:var(--muted); font-size:14px; margin:0 0 24px;">
-                Your NIN is required for KYC compliance. After verification, a Paystack subaccount will be
-                created automatically and your live API key will be issued instantly.
-            </p>
+@if(session('success'))
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;border-radius:8px;padding:12px 16px;font-size:14px;margin-bottom:20px;">✓ {{ session('success') }}</div>
+@endif
+@if($errors->any())
+    <div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:8px;padding:12px 16px;font-size:14px;margin-bottom:20px;">
+        @foreach($errors->all() as $e)<div>{{ $e }}</div>@endforeach
+    </div>
+@endif
 
-            @if($errors->any())
-                <div class="alert alert-error">{{ $errors->first() }}</div>
-            @endif
+@if(!$developer->nin_verified)
+
+    {{-- ── nin Verification ─────────────────────────────────────────────────── --}}
+    <div style="max-width:520px;">
+        <div class="card">
+            <h3 style="font-size:16px;margin:0 0 6px;">Verify Your Business</h3>
+            <p style="color:var(--muted);font-size:14px;margin:0 0 24px;line-height:1.6;">
+                Submit your nin and bank account to activate your account.
+                We'll create your Paystack subaccount and issue your live key instantly.
+            </p>
 
             <form method="POST" action="{{ route('nin.verify') }}">
                 @csrf
-
                 <div class="form-group">
-                    <label for="nin">National Identification Number (NIN)</label>
-                    <input
-                        type="text"
-                        id="nin"
-                        name="nin"
-                        class="form-control"
-                        value="{{ old('nin') }}"
-                        placeholder="12345678901"
-                        maxlength="11"
-                        pattern="\d{11}"
-                        required
-                    />
-                    <div style="font-size:12px; color:var(--muted); margin-top:4px;">Must be exactly 11 digits.</div>
-                    @error('nin')
-                        <div class="field-error">{{ $message }}</div>
-                    @enderror
+                    <label>nin <span style="font-size:12px;color:var(--muted);font-weight:400;">(Bank Verification Number)</span></label>
+                    <input type="text" name="nin" class="form-control"
+                           value="{{ old('nin') }}" placeholder="12345678901"
+                           maxlength="11" pattern="\d{11}" required />
+                    <div style="font-size:12px;color:var(--muted);margin-top:4px;">11 digits — found on your bank app or USSD *565*0#</div>
                 </div>
 
                 <div class="form-group">
-                    <label for="bank_code">Bank</label>
-                    <select
-                        id="bank_code"
-                        name="bank_code"
-                        class="form-control"
-                        required
-                    >
+                    <label>Bank</label>
+                    <select name="bank_code" class="form-control" required id="bank-select" onchange="triggerLookup()">
                         <option value="">Select your bank</option>
-                        @foreach($banks as $bank)
-                            <option value="{{ $bank['code'] }}" {{ old('bank_code') === $bank['code'] ? 'selected' : '' }}>
+                        @foreach($banks ?? [] as $bank)
+                            <option value="{{ $bank['code'] }}" {{ old('bank_code')===$bank['code']?'selected':'' }}>
                                 {{ $bank['name'] }}
                             </option>
                         @endforeach
                     </select>
-                    @error('bank_code')
-                        <div class="field-error">{{ $message }}</div>
-                    @enderror
                 </div>
 
                 <div class="form-group">
-                    <label for="account_number">Account Number</label>
-                    <input
-                        type="text"
-                        id="account_number"
-                        name="account_number"
-                        class="form-control"
-                        value="{{ old('account_number') }}"
-                        placeholder="0123456789"
-                        maxlength="10"
-                        pattern="\d{10}"
-                        required
-                    />
-                    {{-- Live account name lookup --}}
-                    <div id="account-name-display" style="font-size:13px; color:var(--green); min-height:20px; margin-top:6px;"></div>
-                    @error('account_number')
-                        <div class="field-error">{{ $message }}</div>
-                    @enderror
+                    <label>Account Number</label>
+                    <input type="text" name="account_number" id="account-input" class="form-control"
+                           value="{{ old('account_number') }}" placeholder="0123456789"
+                           maxlength="10" pattern="\d{10}" required
+                           oninput="triggerLookup()" />
+                    <div id="account-name" style="font-size:13px;min-height:20px;margin-top:6px;font-weight:600;"></div>
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="margin-top:8px;">
+                <button type="submit" class="btn btn-primary" style="width:100%;">
                     Verify &amp; Activate Account
                 </button>
             </form>
@@ -89,133 +63,182 @@
     </div>
 
 @else
-    {{-- ── Active API Key ──────────────────────────────────────────────────── --}}
-    <div style="max-width:600px; display:flex; flex-direction:column; gap:20px;">
 
-        {{-- Key card --}}
+    {{-- ── Active account ───────────────────────────────────────────────────── --}}
+    <div style="display:flex;flex-direction:column;gap:16px;max-width:580px;">
+
+        {{-- Status banner --}}
+        <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;">
+            <div style="width:10px;height:10px;background:#10b981;border-radius:50%;flex-shrink:0;"></div>
+            <div>
+                <div style="font-weight:700;font-size:14px;color:#166534;">Account Active</div>
+                <div style="font-size:12px;color:#166534;opacity:.8;">Your API key is live and ready to use on your website.</div>
+            </div>
+        </div>
+
+        {{-- Public key card --}}
         <div class="card">
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
-                <div style="width:10px; height:10px; background:var(--green); border-radius:50%;"></div>
-                <h3 style="font-size:16px; margin:0;">Account Active</h3>
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">
+                Public API Key
             </div>
-            <p style="color:var(--muted); font-size:14px; margin:0 0 16px;">
-                Your public key is live and ready to use. Include it in <code>Booking.init()</code> on your website.
-            </p>
-
-            <div class="stat-label" style="margin-bottom:8px;">Public API Key</div>
-            <div class="key-box">
-                <div class="key-value" id="api-key-value">{{ $developer->public_key }}</div>
-                <button class="btn btn-sm btn-outline" onclick="copyKey()">Copy</button>
+            <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;">
+                <div id="api-key-value" style="font-family:'DM Mono',monospace;font-size:12px;color:var(--ink);word-break:break-all;line-height:1.6;">
+                    {{ $developer->public_key }}
+                </div>
             </div>
-            <div style="font-size:12px; color:var(--muted); margin-top:8px;">
-                This key is safe to use in client-side code. Never share your secret key.
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn btn-outline btn-sm" onclick="copyKey()" id="copy-btn">Copy Key</button>
+                <button class="btn btn-outline btn-sm" onclick="toggleKey()" id="toggle-btn" style="color:var(--muted);">Show</button>
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5;">
+                Safe to use in client-side code. Never share your <strong>secret key</strong>.
             </div>
         </div>
 
         {{-- Subaccount info --}}
         <div class="card">
-            <h3 style="font-size:15px; margin:0 0 12px;">Paystack Subaccount</h3>
-            <table>
-                <tr>
-                    <td style="color:var(--muted); font-size:13px; border:none; padding:6px 0;">Subaccount Code</td>
-                    <td class="mono" style="border:none; padding:6px 0;">{{ $developer->paystack_subaccount_code }}</td>
-                </tr>
-                <tr>
-                    <td style="color:var(--muted); font-size:13px; border:none; padding:6px 0;">Settlement Split</td>
-                    <td style="border:none; padding:6px 0;">
-                        <span class="badge badge-green">95% to you</span>
-                        &nbsp;
-                        <span class="badge badge-gray">5% platform</span>
-                    </td>
-                </tr>
-                <tr>
-                    <td style="color:var(--muted); font-size:13px; border:none; padding:6px 0;">Status</td>
-                    <td style="border:none; padding:6px 0;">@include('components.status-badge', ['status' => $developer->status])</td>
-                </tr>
-            </table>
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;">
+                Paystack Subaccount
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+                    <span style="font-size:13px;color:var(--muted);flex-shrink:0;">Subaccount Code</span>
+                    <span style="font-family:monospace;font-size:12px;word-break:break-all;text-align:right;">{{ $developer->paystack_subaccount_code ?? '—' }}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+                    <span style="font-size:13px;color:var(--muted);">Settlement Split</span>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;background:#f0fdf4;color:#15803d;">95% to you</span>
+                        <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;background:#f3f4f6;color:#6b7280;">{{ $developer->platform_fee_percent ?? 5 }}% platform</span>
+                    </div>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;flex-wrap:wrap;">
+                    <span style="font-size:13px;color:var(--muted);">Account Status</span>
+                    @php $sc=['active'=>['#15803d','#f0fdf4'],'pending'=>['#d97706','#fffbeb'],'suspended'=>['#ef4444','#fef2f2']]; [$c,$bg]=$sc[$developer->status]??['#6b7280','#f3f4f6']; @endphp
+                    <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;background:{{ $bg }};color:{{ $c }};">{{ ucfirst($developer->status) }}</span>
+                </div>
+            </div>
+        </div>
+
+        {{-- Quick embed --}}
+        <div class="card">
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">
+                Quick Embed
+            </div>
+            <p style="font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.5;">Add this to your website — paste before the closing <code>&lt;/body&gt;</code> tag:</p>
+            <div style="background:#0d0d14;border-radius:8px;padding:14px;overflow-x:auto;position:relative;">
+                <pre id="embed-snippet" style="margin:0;color:#a5b4fc;font-size:11px;line-height:1.7;white-space:pre;font-family:monospace;">&lt;div id="booking-widget"&gt;&lt;/div&gt;
+&lt;script src="{{ config('app.url') }}/sdk/booking.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+(async () => {
+  await Booking.init({
+    publicKey: '{{ $developer->public_key }}',
+    baseUrl:   '{{ config('app.url') }}/api',
+    returnUrl: window.location.href + '?booking=success',
+  });
+  Booking.widget('#booking-widget', { title: 'Book Now' });
+})();
+&lt;/script&gt;</pre>
+                <button onclick="copySnippet()" id="snippet-btn"
+                        style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;">
+                    Copy
+                </button>
+            </div>
+            <div style="margin-top:10px;">
+                <a href="{{ route('dashboard.integration') }}" style="font-size:13px;color:var(--accent);">
+                    View full integration guide →
+                </a>
+            </div>
         </div>
 
         {{-- Danger zone --}}
-        <div class="card" style="border-color:#fee2e2;">
-            <h3 style="font-size:15px; margin:0 0 8px; color:var(--red);">Danger Zone</h3>
-            <p style="font-size:14px; color:var(--muted); margin:0 0 16px;">
-                Regenerating your key will <strong>immediately invalidate</strong> the current key.
-                Any live integrations using the old key will stop working.
+        <div class="card" style="border-color:#fecaca;">
+            <div style="font-size:11px;font-weight:700;color:#ef4444;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">
+                Danger Zone
+            </div>
+            <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5;">
+                Regenerating your key <strong>immediately invalidates</strong> the current one.
+                Any live integrations will stop working until you update them.
             </p>
             <form method="POST" action="{{ route('api-keys.regenerate') }}"
-                  onsubmit="return confirm('Are you sure? Your current key will stop working immediately.')">
+                  onsubmit="return confirm('Regenerate key? Your current key will stop working immediately.')">
                 @csrf
-                @method('POST')
-                <button type="submit" class="btn btn-danger btn-sm">⚠ Regenerate Key</button>
+                <button type="submit" class="btn btn-outline btn-sm" style="color:#ef4444;border-color:#fecaca;">
+                    ⚠ Regenerate Key
+                </button>
             </form>
         </div>
-
     </div>
-@endif
 
-@endsection
+@endif
 
 @push('scripts')
 <script>
-    {{-- Live bank account name lookup --}}
-    const accountInput = document.getElementById('account_number');
-    const bankSelect   = document.getElementById('bank_code');
-    const nameDisplay  = document.getElementById('account-name-display');
+  // ── Key visibility toggle ──────────────────────────────────────────────────
+  const KEY    = '{{ $developer->public_key ?? '' }}';
+  const masked = KEY.slice(0, 12) + '••••••••••••••••••••••••';
+  const keyEl  = document.getElementById('api-key-value');
+  let   shown  = false;
 
-    let lookupTimer;
+  if (keyEl) keyEl.textContent = masked;
 
-    function triggerLookup() {
-        clearTimeout(lookupTimer);
-        const accNo    = accountInput?.value || '';
-        const bankCode = bankSelect?.value   || '';
-        if (!nameDisplay) return;
+  function toggleKey() {
+    shown = !shown;
+    if (keyEl) keyEl.textContent = shown ? KEY : masked;
+    const btn = document.getElementById('toggle-btn');
+    if (btn) btn.textContent = shown ? 'Hide' : 'Show';
+  }
 
-        nameDisplay.style.color = 'var(--muted)';
-        nameDisplay.textContent = '';
+  function copyKey() {
+    navigator.clipboard.writeText(KEY).then(() => {
+      const btn = document.getElementById('copy-btn');
+      if (btn) { btn.textContent = 'Copied!'; setTimeout(()=>btn.textContent='Copy Key',2000); }
+    });
+  }
 
-        if (accNo.length !== 10 || !bankCode) return;
+  function copySnippet() {
+    const pre = document.getElementById('embed-snippet');
+    const text = pre?.textContent || '';
+    navigator.clipboard.writeText(text.trim()).then(() => {
+      const btn = document.getElementById('snippet-btn');
+      if (btn) { btn.textContent = 'Copied!'; setTimeout(()=>btn.textContent='Copy',2000); }
+    });
+  }
 
-        nameDisplay.textContent = 'Looking up account…';
-
-        lookupTimer = setTimeout(async () => {
-            try {
-                const res = await fetch('{{ route("api.verify-account") }}', {
-                    method:  'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    },
-                    body: JSON.stringify({ account_number: accNo, bank_code: bankCode }),
-                });
-
-                const data = await res.json();
-
-                if (res.ok && data.account?.account_name) {
-                    nameDisplay.style.color = 'var(--green)';
-                    nameDisplay.textContent = '✓ ' + data.account.account_name;
-                } else {
-                    nameDisplay.style.color = 'var(--red)';
-                    nameDisplay.textContent = 'Account not found';
-                }
-            } catch {
-                nameDisplay.style.color = 'var(--red)';
-                nameDisplay.textContent = 'Could not verify account';
-            }
-        }, 700);
-    }
-
-    accountInput?.addEventListener('input', triggerLookup);
-    bankSelect?.addEventListener('change', triggerLookup);
-
-    {{-- Copy key to clipboard --}}
-    function copyKey() {
-        const key = document.getElementById('api-key-value')?.textContent?.trim();
-        if (!key) return;
-        navigator.clipboard.writeText(key).then(() => {
-            const btn = event.target;
-            btn.textContent = 'Copied!';
-            setTimeout(() => btn.textContent = 'Copy', 2000);
+  // ── Bank account lookup ────────────────────────────────────────────────────
+  let lookupTimer;
+  function triggerLookup() {
+    clearTimeout(lookupTimer);
+    const acc  = document.getElementById('account-input')?.value  || '';
+    const bank = document.getElementById('bank-select')?.value    || '';
+    const el   = document.getElementById('account-name');
+    if (!el) return;
+    el.style.color   = 'var(--muted)';
+    el.textContent   = '';
+    if (acc.length !== 10 || !bank) return;
+    el.textContent   = 'Looking up…';
+    lookupTimer = setTimeout(async () => {
+      try {
+        const res  = await fetch('{{ route("api.verify-account") }}', {
+          method:  'POST',
+          headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN':'{{ csrf_token() }}' },
+          body:    JSON.stringify({ account_number: acc, bank_code: bank }),
         });
-    }
+        const data = await res.json();
+        if (res.ok && data.account?.account_name) {
+          el.style.color = '#10b981';
+          el.textContent = '✓ ' + data.account.account_name;
+        } else {
+          el.style.color = '#ef4444';
+          el.textContent = 'Account not found';
+        }
+      } catch {
+        el.style.color = '#ef4444';
+        el.textContent = 'Could not verify';
+      }
+    }, 700);
+  }
 </script>
 @endpush
+
+@endsection

@@ -73,7 +73,7 @@
             @endif
         </div>
 
-        <button type="submit" class="btn-block">Sign In</button>
+        <button type="submit" class="btn-submit">Sign In</button>
     </form>
 
     <div class="auth-footer">

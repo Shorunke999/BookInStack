@@ -1,3 +1,16 @@
+@push('styles')
+<style>
+@media (max-width: 768px) {
+    .card { padding: 16px !important; }
+    pre   { font-size: 11px !important; }
+    code  { font-size: 11px !important; word-break: break-all; }
+    [style*="display:grid;grid-template-columns:1fr 1fr"] {
+        display: flex !important; flex-direction: column !important;
+    }
+}
+</style>
+@endpush
+
 @extends('layouts.app')
 @section('title', 'Integration Guide')
 @section('page-title', 'Integration Guide')
@@ -28,13 +41,13 @@
 {{-- QUICKSTART --}}
 <div id="ipanel-quickstart">
     <div class="card" style="margin-bottom:16px;"><h3 style="margin-bottom:8px;">1. Load the SDK</h3>
-        <pre style="background:#0d0d14;color:#a5b4fc;padding:14px 16px;border-radius:8px;font-size:13px;overflow-x:auto;">&lt;script src="{{ config('app.url') }}/sdk/booking.js"&gt;&lt;/script&gt;</pre>
+        <pre style="background:#0d0d14;color:#a5b4fc;padding:14px 16px;border-radius:8px;font-size:13px;overflow-x:auto;overflow-x:auto;white-space:pre;word-break:normal;">&lt;script src="{{ config('app.url') }}/sdk/booking.js"&gt;&lt;/script&gt;</pre>
     </div>
     <div class="card" style="margin-bottom:16px;"><h3 style="margin-bottom:8px;">2. Add a container</h3>
-        <pre style="background:#0d0d14;color:#a5b4fc;padding:14px 16px;border-radius:8px;font-size:13px;">&lt;div id="booking-widget"&gt;&lt;/div&gt;</pre>
+        <pre style="background:#0d0d14;color:#a5b4fc;padding:14px 16px;border-radius:8px;font-size:13px;overflow-x:auto;white-space:pre;word-break:normal;">&lt;div id="booking-widget"&gt;&lt;/div&gt;</pre>
     </div>
     <div class="card" style="margin-bottom:16px;"><h3 style="margin-bottom:8px;">3. Initialize</h3>
-        <pre style="background:#0d0d14;color:#a5b4fc;padding:14px 16px;border-radius:8px;font-size:13px;line-height:1.7;">(async () => {
+        <pre style="background:#0d0d14;color:#a5b4fc;padding:14px 16px;border-radius:8px;font-size:13px;line-height:1.7;overflow-x:auto;white-space:pre;word-break:normal;">(async () => {
   await Booking.init({
     publicKey: '{{ $pk }}',
     baseUrl:   '{{ $baseUrl }}',
@@ -45,7 +58,7 @@
 })();</pre>
     </div>
     <div class="card"><h3 style="margin-bottom:8px;">4. Handle return</h3>
-        <pre style="background:#0d0d14;color:#a5b4fc;padding:14px 16px;border-radius:8px;font-size:13px;line-height:1.7;">const params = new URLSearchParams(window.location.search);
+        <pre style="background:#0d0d14;color:#a5b4fc;padding:14px 16px;border-radius:8px;font-size:13px;line-height:1.7;overflow-x:auto;white-space:pre;word-break:normal;">const params = new URLSearchParams(window.location.search);
 if (params.get('booking') === 'success') {
   const ref = params.get('reference') || params.get('trxref');
   // show success UI
@@ -72,7 +85,7 @@ if (params.get('booking') === 'success') {
         </div>
     </div>
     <div class="card"><h3 style="margin-bottom:8px;">Pre-filled WhatsApp message</h3>
-        <pre style="background:#0d0d14;color:#a5b4fc;padding:14px 16px;border-radius:8px;font-size:12px;line-height:1.7;">Hello,
+        <pre style="background:#0d0d14;color:#a5b4fc;padding:14px 16px;border-radius:8px;font-size:12px;line-height:1.7;overflow-x:auto;white-space:pre;word-break:normal;">Hello,
 
 I am interested in making a booking.
 📋 *{{ ucfirst($mode) }} Details*
@@ -113,7 +126,7 @@ Can we discuss availability and pricing?</pre>
     ] as [$m,$em,$label,$desc,$fields])
         <div class="card" style="margin-bottom:12px;{{ $mode===$m?'border-color:var(--accent);':'' }}">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="font-size:20px;">{{ $em }}</span><div><div style="font-weight:700;font-size:14px;">{{ $label }}</div><div style="font-size:12px;color:var(--muted);">{{ $desc }}</div></div>@if($mode===$m)<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--accent);color:#fff;margin-left:auto;">Active</span>@endif</div>
-            <pre style="background:#0d0d14;color:#a5b4fc;padding:10px 14px;border-radius:6px;font-size:12px;">{{ $fields }}</pre>
+            <pre style="background:#0d0d14;color:#a5b4fc;padding:10px 14px;border-radius:6px;font-size:12px;overflow-x:auto;white-space:pre;word-break:normal;">{{ $fields }}</pre>
         </div>
     @endforeach
     <div class="card"><h3 style="margin-bottom:6px;">Day vs Night unit</h3><p style="font-size:13px;color:var(--muted);line-height:1.6;">Set in Settings → Mode. <strong>Day</strong> = event centres (Start/End date, ☀️ 2 days). <strong>Night</strong> = hotels (Check-in/Check-out, 🌙 3 nights). SDK reads automatically.</p></div>
@@ -128,7 +141,7 @@ Can we discuss availability and pricing?</pre>
     </div>
     <div class="card" style="margin-bottom:16px;"><h3 style="margin-bottom:8px;">Booking window</h3><p style="font-size:13px;color:var(--muted);line-height:1.6;">Restrict days + hours in Settings → Hours. SDK checks on load — shows "Bookings closed" if outside window. Also enforced server-side on booking creation and payment link payment.</p></div>
     <div class="card"><h3 style="margin-bottom:8px;">SDK state</h3>
-        <pre style="background:#0d0d14;color:#a5b4fc;padding:14px 16px;border-radius:8px;font-size:12px;line-height:1.8;">await Booking.init({ publicKey, baseUrl });
+        <pre style="background:#0d0d14;color:#a5b4fc;padding:14px 16px;border-radius:8px;font-size:12px;line-height:1.8;overflow-x:auto;white-space:pre;word-break:normal;">await Booking.init({ publicKey, baseUrl });
 
 Booking.mode            // 'appointment' | 'ticket' | 'reservation'
 Booking.reservationUnit // 'night' | 'day'
@@ -151,7 +164,7 @@ Booking.catalog         // array of active categories</pre>
         @endforeach
     </div>
     <div class="card"><h3 style="margin-bottom:8px;">Required packages</h3>
-        <pre style="background:#0d0d14;color:#a5b4fc;padding:12px 16px;border-radius:8px;font-size:13px;">composer require simplesoftwareio/simple-qrcode
+        <pre style="background:#0d0d14;color:#a5b4fc;padding:12px 16px;border-radius:8px;font-size:13px;overflow-x:auto;white-space:pre;word-break:normal;">composer require simplesoftwareio/simple-qrcode
 composer require barryvdh/laravel-dompdf</pre>
         <p style="font-size:12px;color:var(--muted);margin-top:8px;">Both fail gracefully — emails send normally if not installed, QR and PDF are simply omitted.</p>
     </div>

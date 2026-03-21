@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@yield('title', 'Sign In') — BookStackIn</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAzMiAzMic+PHJlY3Qgd2lkdGg9JzMyJyBoZWlnaHQ9JzMyJyByeD0nNicgZmlsbD0nIzRmNDZlNScvPjx0ZXh0IHg9JzUwJScgeT0nNTQlJyBkb21pbmFudC1iYXNlbGluZT0nbWlkZGxlJyB0ZXh0LWFuY2hvcj0nbWlkZGxlJyBmb250LWZhbWlseT0nc3lzdGVtLXVpJyBmb250LXdlaWdodD0nNzAwJyBmb250LXNpemU9JzE0JyBmaWxsPSd3aGl0ZSc+QjwvdGV4dD48L3N2Zz4=" />
+    <title>@yield('title', 'Sign In') — BookInStack</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
@@ -196,18 +196,6 @@
 
         .field-error { color: #dc2626; font-size: 12px; margin-top: 4px; }
 
-        
-        .btn-block {
-            width: 100%; padding: 11px;
-            background: #4f46e5; color: #fff;
-            font-size: 14px; font-weight: 600;
-            border: none; border-radius: 8px;
-            cursor: pointer; transition: background .15s;
-            font-family: 'DM Sans', sans-serif;
-        }
-
-        .btn-block:hover { background: #4338ca; }
-
         .btn-submit {
             width: 100%;
             padding: 11px;
@@ -239,16 +227,6 @@
         }
 
         .auth-switch a:hover { text-decoration: underline; }
-
-         .auth-footer {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 14px;
-            color: #64748b;
-        }
-
-        .auth-footer a { color: #4f46e5; font-weight: 500; text-decoration: none; }
-        .auth-footer a:hover { text-decoration: underline; }
 
         .alert {
             padding: 11px 13px;
@@ -299,32 +277,43 @@
 <!-- ── Left brand panel ──────────────────────────────────────────────────── -->
 <div class="auth-left">
     <div class="auth-left-inner">
-        <a href="{{ url('/') }}" class="auth-logo">BookStack<span>In</span></a>
+        <a href="{{ url('/') }}" class="auth-logo">BookIn<span>Stack</span></a>
 
         <div class="auth-tagline">
-            <h2>Get paid for every<br /><span>booking you take</span></h2>
+            <h2>Take bookings.<br /><span>Get paid instantly.</span></h2>
             <p>
-                Integrate bookings and Paystack payments into any website
-                with a single script tag. Verify once, go live instantly.
+                BookInStack gives your business a complete booking and payment system.
+                Set up once, earn every time a customer books.
             </p>
 
-            <div class="auth-code">
-                <pre><span class="cm">// Three lines. That's your entire flow.</span>
-<span class="fn">Booking</span>.<span class="fn">init</span>({ <span class="fn">publicKey</span>: <span class="str">'pk_live_xxx'</span> });
-<span class="kw">const</span> b = <span class="kw">await</span> <span class="fn">Booking</span>.<span class="fn">create</span>({ amount: <span class="nm">500000</span> });
-<span class="kw">await</span> <span class="fn">Booking</span>.<span class="fn">pay</span>(b.reference);</pre>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px;">
+                @foreach([
+                    ['💳','Payments straight to your bank account — 95% is yours'],
+                    ['📋','Manage all bookings from one simple dashboard'],
+                    ['🎟','QR tickets, staff check-in, attendance tracking'],
+                    ['💬','Let customers negotiate price via WhatsApp'],
+                ] as [$icon,$text])
+                <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;background:rgba(255,255,255,.07);border-radius:9px;border:1px solid rgba(255,255,255,.1);">
+                    <span style="font-size:18px;flex-shrink:0;">{{ $icon }}</span>
+                    <span style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.4;">{{ $text }}</span>
+                </div>
+                @endforeach
             </div>
         </div>
     </div>
 
     <div class="auth-stats">
         <div class="auth-stat">
+            <div class="num">95%</div>
+            <div class="lbl">Yours per booking</div>
+        </div>
+        <div class="auth-stat">
             <div class="num">₦0</div>
             <div class="lbl">Monthly fee</div>
         </div>
         <div class="auth-stat">
-            <div class="num">~60s</div>
-            <div class="lbl">Setup time</div>
+            <div class="num">5min</div>
+            <div class="lbl">To go live</div>
         </div>
     </div>
 </div>
@@ -336,7 +325,7 @@
         {{-- Back to home on mobile (since left panel is hidden) --}}
         <div style="margin-bottom:28px; display:none;" class="mobile-back">
             <a href="{{ url('/') }}" style="font-size:20px; font-weight:800; color:#0d0d14; text-decoration:none; letter-spacing:-.3px;">
-                Book<span style="color:#4f46e5;">Stack</span>
+                BookIn<span style="color:#4f46e5;">Stack</span>
             </a>
         </div>
 

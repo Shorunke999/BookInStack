@@ -233,7 +233,7 @@ class PaymentLinkController extends Controller
                 ],
                 'subaccount'         => $link->developer->paystack_subaccount_code,
                 'bearer'             => 'subaccount',
-                'transaction_charge' => (int) round($amount * 0.05),
+                'transaction_charge' => $link->developer->platformFeeKobo($amount),
             ]);
  
             return response()->json([

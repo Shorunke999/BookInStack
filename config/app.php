@@ -123,4 +123,7 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    // config/app.php
+    'superadmin_email' => env('SUPERADMIN_EMAIL'),
+
 ];
