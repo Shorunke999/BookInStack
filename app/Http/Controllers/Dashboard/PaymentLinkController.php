@@ -89,10 +89,10 @@ class PaymentLinkController extends Controller
     public function cancel(string $token): RedirectResponse
     {
        $developer = $this->effectiveDeveloper(request());
-        PaymentLink::where('token', $token)
+        $payment = PaymentLink::where('token', $token)
             ->where('developer_id', $developer->id)
-            ->where('status', 'pending')
-            ->update(['status' => 'cancelled']);
+            ->where('status', 'pending')->first();
+        $payment->delete();
         return redirect()->route('payment-links.index')->with('success', 'Link cancelled.');
     }
 
