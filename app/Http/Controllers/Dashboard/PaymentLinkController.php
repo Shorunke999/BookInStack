@@ -46,7 +46,7 @@ class PaymentLinkController extends Controller
             'customer_email' => 'required|email',
             'customer_phone' => 'nullable|string|max:20',
             'category_id'    => 'nullable|integer|exists:booking_categories,id',
-            'amount'         => 'required|integer|min:100',
+            'amount'         => 'required|min:100',
             'description'    => 'required|string|max:255',
             'note'           => 'nullable|string|max:500',
             'expires_hours'  => 'nullable|integer|min:1|max:720',
