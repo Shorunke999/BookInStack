@@ -107,7 +107,7 @@ function onCategoryChange(sel) {
     const name  = opt.text.split(' — ')[0];
 
     if (price) {
-        document.getElementById('f-amount').value      = (parseInt(price) ).toFixed(2);
+        document.getElementById('f-amount').value      = parseInt(price);
         document.getElementById('f-description').value = name;
     }
 }
