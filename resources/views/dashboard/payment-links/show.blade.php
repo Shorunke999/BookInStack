@@ -4,10 +4,6 @@
 
 @section('content')
 
-@if(session('success'))
-    <div style="background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;border-radius:8px;padding:12px 16px;font-size:14px;margin-bottom:20px;">✓ {{ session('success') }}</div>
-@endif
-
 <div style="max-width:640px;">
 
     {{-- Status banner --}}

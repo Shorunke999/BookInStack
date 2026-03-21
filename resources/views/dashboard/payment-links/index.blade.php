@@ -4,9 +4,6 @@
 
 @section('content')
 
-@if(session('success'))
-    <div style="background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;border-radius:8px;padding:12px 16px;font-size:14px;margin-bottom:20px;">✓ {{ session('success') }}</div>
-@endif
 
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
     <p style="font-size:13px;color:var(--muted);line-height:1.6;max-width:480px;">

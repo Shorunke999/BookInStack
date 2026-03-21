@@ -4,15 +4,6 @@
 
 @section('content')
 
-@if(session('success'))
-    <div style="background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;border-radius:8px;padding:12px 16px;font-size:14px;margin-bottom:20px;">✓ {{ session('success') }}</div>
-@endif
-@if($errors->any())
-    <div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:8px;padding:12px 16px;font-size:14px;margin-bottom:20px;">
-        @foreach($errors->all() as $e)<div>{{ $e }}</div>@endforeach
-    </div>
-@endif
-
 @if(!$developer->nin_verified)
 
     {{-- ── nin Verification ─────────────────────────────────────────────────── --}}
