@@ -39,6 +39,7 @@ class Booking extends Model
         'booked_by_id',
         'booked_by_type',
         'booked_via',
+        'booking_expires_at',
         'attended_by_id',
         'payment_link_token'
 

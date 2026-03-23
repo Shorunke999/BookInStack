@@ -6,6 +6,7 @@ use App\Models\Booking;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
@@ -95,7 +96,7 @@ class BookingController extends Controller
             'adults'         => $data['adults']   ?? 1,
             'children'       => $data['children'] ?? 0,
             'booked_via'   => 'widget',        // always widget for SDK bookings
-            'booked_by_id' => null;  
+            'booked_by_id' => null
         ];
 
         if ($mode === 'reservation') {
