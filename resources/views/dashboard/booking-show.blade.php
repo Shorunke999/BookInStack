@@ -162,7 +162,7 @@
             <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;">Payment</div>
             @php
                 $feePct      = $developer->platform_fee_percent ?? 5;
-                $platformFee = (int) round($booking->amount * $feePct );
+                $platformFee = (int) round(($booking->amount * $feePct) /100 );
                 $devShare    = $booking->amount - $platformFee;
             @endphp
             <div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid var(--border);">
