@@ -41,7 +41,7 @@ class VerifyPublicKey
         // Find developer
         $developer = Developer::where('public_key', $publicKey)
             ->where('status', 'active')
-            ->where('nin_verified', true)
+            ->where('bvn_verified', true)
             ->first();
 
         if (! $developer) {

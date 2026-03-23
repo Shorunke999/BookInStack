@@ -19,6 +19,10 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+// ── Public legal pages ────────────────────────────────────────────────────────
+Route::get('/privacy', fn() => view('legal.privacy'))->name('privacy');
+Route::get('/terms',   fn() => view('legal.terms'))->name('terms');
+
 // ─── Guest routes ────────────────────────────────────────────────────────────
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -50,6 +54,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/bookings', [DashboardController::class, 'bookings'])->name('dashboard.bookings');
     Route::get('/payments', [DashboardController::class, 'payments'])->name('dashboard.payments');
+    Route::get('/bookings/{reference}', [DashboardController::class, 'showBooking'])
+    ->name('bookings.show');
     Route::post('/bookings/{reference}/attend', [BookingController::class, 'dashboardMarkAttended'])
         ->name('bookings.attend');
 
@@ -98,8 +104,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/booking-settings/save', [DashboardController::class, 'saveBookingSettings'])->name('dashboard.booking-settings.save');
         Route::post('/widget-apperance/save',[DashboardController::class, 'saveWidgetAppearance'])->name('dashboard.widget-appearance.save');
         Route::post('/api-keys/regenerate', [DashboardController::class, 'regenerateKey'])->name('api-keys.regenerate');
-       Route::post('/nin/verify', [NinController::class, 'verify'])->name('nin.verify');
-
+        Route::post('/bvn/verify', [\App\Http\Controllers\Dashboard\VerificationController::class, 'verify'])
+            ->name('bvn.verify');
 
         // Categories — CRUD lives within the settings page (same URL, different action)
         Route::post  ('/settings/categories',            [BookingCategoryController::class, 'store'])->name('categories.store');

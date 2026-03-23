@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Developer;
 use Illuminate\Http\Request;
+use App\Services\PaystackService;
 
 class SuperAdminController extends Controller
 {
@@ -85,10 +86,11 @@ class SuperAdminController extends Controller
         $data = $request->validate([
             'platform_fee_percent' => 'required|numeric|min:0|max:50',
         ]);
+        $developer = Developer::whereNull('owner_id')->findOrFail($id);
+        $developer->update(['platform_fee_percent' => $data['platform_fee_percent']]);
 
-        Developer::whereNull('owner_id')->findOrFail($id)
-            ->update(['platform_fee_percent' => $data['platform_fee_percent']]);
-
+        $paystackService = new PaystackService();
+        $paystackService->updateSubaccountFee($developer->paystack_subaccount_code,$data['platform_fee_percent'])
         return back()->with('success', 'Platform fee updated.');
     }
 

@@ -116,7 +116,27 @@
                 </button>
             </div>
         </div>
-
+        {{-- Terms + Privacy agreement --}}
+        <div style="margin-bottom:16px;">
+            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
+                <input type="checkbox" name="terms" value="1"
+                    style="width:16px;height:16px;margin-top:2px;accent-color:#4f46e5;flex-shrink:0;cursor:pointer;"
+                    {{ old('terms') ? 'checked' : '' }}
+                    required />
+                <span style="font-size:13px;color:#64748b;line-height:1.5;">
+                    I agree to the
+                    <a href="{{ route('terms') }}" target="_blank"
+                    style="color:#4f46e5;text-decoration:none;font-weight:600;">Terms of Service</a>
+                    and
+                    <a href="{{ route('privacy') }}" target="_blank"
+                    style="color:#4f46e5;text-decoration:none;font-weight:600;">Privacy Policy</a>.
+                    I confirm that I am at least 18 years old.
+                </span>
+            </label>
+            @error('terms')
+                <div style="color:#ef4444;font-size:12px;margin-top:4px;margin-left:26px;">{{ $message }}</div>
+            @enderror
+        </div>
         <button type="submit" class="btn-submit">Create Account</button>
     </form>
 

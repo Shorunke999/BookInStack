@@ -66,6 +66,7 @@ class AuthController extends Controller
             'business_name' => 'required|string|max:150',
             'email'         => 'required|email|unique:developers,email',
             'password'      => ['required', 'confirmed', PasswordRule::min(8)->mixedCase()->numbers()],
+            'terms' => 'accepted'
         ]);
 
         $developer = Developer::create([

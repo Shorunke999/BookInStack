@@ -46,7 +46,7 @@ class BookingController extends Controller
         }
 
         $data = $request->validate($rules);
-        Log::info('Creating booking with data: ', $request->all());
+
         // ── Resolve category → amount + description ────────────────────────────
         $category    = null;
         $amount      = $data['amount'] ?? null;
@@ -56,6 +56,7 @@ class BookingController extends Controller
             $category = \App\Models\BookingCategory::where('id', $data['category_id'])
                 ->where('developer_id', $developer->id)
                 ->where('booking_mode', $mode)
+                ->where('status', 'active')
                 ->first();
 
             if (!$category) {
@@ -65,9 +66,9 @@ class BookingController extends Controller
             $description = $description ?? $category->name;
 
             $amount = match ($mode) {
-                'ticket' => $this->ticketAmount($category, $data),
+                'ticket'      => $this->ticketAmount($category, $data),
                 'reservation' => $this->reservationAmount($category, $data),
-                default => $category->price,
+                default       => $category->price,
             };
         }
 
@@ -77,35 +78,15 @@ class BookingController extends Controller
         if (!$description) {
             return response()->json(['message' => 'description is required when no category is set.'], 422);
         }
-        if ($mode === 'reservation' && $category) {
-            $requested_in  = \Carbon\Carbon::parse($data['check_in']);
-            $requested_out = \Carbon\Carbon::parse($data['check_out']);
 
-            // Count paid/pending bookings for this category that overlap the requested dates
-            $overlapping = \App\Models\Booking::where('category_id', $category->id)
-                ->whereIn('status', ['paid'])
-                ->where(function ($q) use ($requested_in, $requested_out) {
-                    // Overlap condition: existing booking starts before new end AND ends after new start
-                    $q->where('check_in',  '<', $requested_out)
-                    ->where('check_out', '>', $requested_in);
-                })
-                ->count();
-            if ($category->total_slots !== null && $overlapping >= $category->total_slots) {
-                return response()->json([
-                    'message' => "Sorry, {$category->name} is fully booked for your selected dates. Please choose different dates or another option.",
-                    'error'   => 'DATES_UNAVAILABLE',
-                ], 422);
-            }
-        }
-
-        // ── Create booking ─────────────────────────────────────────────────────
+        // ── Build base payload ─────────────────────────────────────────────────
         $payload = [
             'developer_id'   => $developer->id,
             'category_id'    => $category?->id,
             'reference'      => 'BKG-' . strtoupper(\Illuminate\Support\Str::random(12)),
             'amount'         => $amount,
             'description'    => $description,
-            'booking_mode' => $mode,
+            'booking_mode'   => $mode,
             'customer_email' => $data['customer_email'],
             'customer_name'  => $data['customer_name']  ?? null,
             'customer_phone' => $data['customer_phone'] ?? null,
@@ -113,18 +94,121 @@ class BookingController extends Controller
             'metadata'       => $data['metadata'] ?? null,
             'adults'         => $data['adults']   ?? 1,
             'children'       => $data['children'] ?? 0,
+            'booked_via'   => 'widget',        // always widget for SDK bookings
+            'booked_by_id' => null;  
         ];
 
         if ($mode === 'reservation') {
             $payload['check_in']  = $data['check_in'];
             $payload['check_out'] = $data['check_out'];
-            $payload['amount'] = $this->reservationAmount($category, $data);
+            $payload['amount']    = $this->reservationAmount($category, $data);
         }
         if ($mode === 'appointment') {
             $payload['preferred_date'] = $data['preferred_date'] ?? null;
             $payload['preferred_time'] = $data['preferred_time'] ?? null;
         }
-        $booking = Booking::create($payload);
+
+        // ── Create booking with appropriate locking per mode ───────────────────
+        try {
+            $booking = match ($mode) {
+
+                // ── TICKET: atomic slot check + 15-min hold ────────────────────
+                'ticket' => DB::transaction(function () use ($category, $payload) {
+                    if (!$category) {
+                        // No category — no slot limit, just create
+                        return Booking::create($payload);
+                    }
+
+                    // Lock this category row — serialises concurrent requests
+                    $cat = \App\Models\BookingCategory::lockForUpdate()->find($category->id);
+                    $hasCurrentBooking = Booking::where('category_id', $cat->id)
+                                            ->where('customer_email',$payload['customer_email'])
+                                            ->first();
+                    if($hasCurrentBooking)
+                    {
+                        if($hasCurrentBooking->status = 'paid')
+                        {
+                             throw new \Exception('TICKET SOLD TO THIS CUSTOMER EMAIL ALREADY!');
+                        }
+                        return $hasCurrentBooking;
+                    }
+                    if ($cat->total_slots !== null) {
+                        // Count paid + non-expired pending only
+                        $sold = Booking::where('category_id', $cat->id)
+                            ->where(function ($q) {
+                                $q->where('status', 'paid')
+                                ->orWhere(function ($q2) {
+                                    $q2->where('status', 'pending')
+                                        ->where(function ($q3) {
+                                            $q3->whereNull('booking_expires_at')
+                                                ->orWhere('booking_expires_at', '>', now());
+                                        });
+                                });
+                            })
+                            ->count();
+
+                        if ($sold >= $cat->total_slots) {
+                            throw new \Exception('SOLD_OUT');
+                        }
+                    }
+
+                    // Set 15-minute seat hold — expires if not paid
+                    $payload['booking_expires_at'] = now()->addMinutes(15);
+
+                    return Booking::create($payload);
+                }),
+
+                // ── RESERVATION: date-range overlap check ──────────────────────
+                'reservation' => DB::transaction(function () use ($category, $payload, $data) {
+                    if ($category) {
+                        $requestedIn  = \Carbon\Carbon::parse($data['check_in']);
+                        $requestedOut = \Carbon\Carbon::parse($data['check_out']);
+
+                        // Lock category row
+                        \App\Models\BookingCategory::lockForUpdate()->find($category->id);
+
+                        $overlapping = Booking::where('category_id', $category->id)
+                            ->where('status', 'paid')
+                            ->where('check_in',  '<', $requestedOut)
+                            ->where('check_out', '>', $requestedIn)
+                            ->count();
+
+                        if ($category->total_slots !== null && $overlapping >= $category->total_slots) {
+                            throw new \Exception(
+                                "Sorry, {$category->name} is fully booked for your selected dates.|DATES_UNAVAILABLE"
+                            );
+                        }
+                    }
+
+                    return Booking::create($payload);
+                }),
+
+                // ── APPOINTMENT + default: simple create ──────────────────────
+                default => Booking::create($payload),
+            };
+
+        } catch (\Exception $e) {
+            $parts   = explode('|', $e->getMessage(), 2);
+            $message = $parts[0];
+            $error   = $parts[1] ?? 'BOOKING_FAILED';
+
+            $status = match ($error) {
+                'SOLD_OUT'          => 422,
+                'DATES_UNAVAILABLE' => 422,
+                default             => 500,
+            };
+
+            $response = ['message' => $message === 'SOLD_OUT'
+                ? 'Sorry, this ticket type is sold out.'
+                : $message
+            ];
+
+            if (isset($parts[1])) {
+                $response['error'] = $error;
+            }
+
+            return response()->json($response, $status);
+        }
 
         return response()->json([
             'booking' => $this->formatBooking($booking->load('category'), $mode),
@@ -264,6 +348,7 @@ class BookingController extends Controller
         $booking->update([
             'attended' => $data['attended'],
             'attended_at' => $data['attended'] ? now() : null,
+            'attended_by_id'  => auth()->id(),    
             'attendance_note' => $data['note'] ?? null,
         ]);
 

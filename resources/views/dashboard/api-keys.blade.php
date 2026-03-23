@@ -4,23 +4,23 @@
 
 @section('content')
 
-@if(!$developer->nin_verified)
+@if(!$developer->bvn_verified)
 
-    {{-- ── nin Verification ─────────────────────────────────────────────────── --}}
+    {{-- ── bvn Verification ─────────────────────────────────────────────────── --}}
     <div style="max-width:520px;">
         <div class="card">
             <h3 style="font-size:16px;margin:0 0 6px;">Verify Your Business</h3>
             <p style="color:var(--muted);font-size:14px;margin:0 0 24px;line-height:1.6;">
-                Submit your nin and bank account to activate your account.
+                Submit your bvn and bank account to activate your account.
                 We'll create your Paystack subaccount and issue your live key instantly.
             </p>
 
-            <form method="POST" action="{{ route('nin.verify') }}">
+            <form method="POST" action="{{ route('bvn.verify') }}">
                 @csrf
                 <div class="form-group">
-                    <label>nin <span style="font-size:12px;color:var(--muted);font-weight:400;">(Bank Verification Number)</span></label>
-                    <input type="text" name="nin" class="form-control"
-                           value="{{ old('nin') }}" placeholder="12345678901"
+                    <label>BVN <span style="font-size:12px;color:var(--muted);font-weight:400;">(Bank Verification Number)</span></label>
+                    <input type="text" name="bvn" class="form-control"
+                           value="{{ old('bvn') }}" placeholder="12345678901"
                            maxlength="11" pattern="\d{11}" required />
                     <div style="font-size:12px;color:var(--muted);margin-top:4px;">11 digits — found on your bank app or USSD *565*0#</div>
                 </div>

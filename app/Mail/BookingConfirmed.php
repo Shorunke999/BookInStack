@@ -11,10 +11,15 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class BookingConfirmed extends Mailable
+class BookingConfirmed extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
+    public int $tries   = 3;       // retry 3 times if it fails
+    public int $timeout = 60;      // give up after 60s per attempt
+    public int $backoff = 30; 
+
+    
     public array  $modeConfig;
     public string $qrCodeSvg;
     public string $qrCodeBase64;

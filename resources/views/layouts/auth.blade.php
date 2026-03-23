@@ -165,6 +165,15 @@
             line-height: 1.5;
         }
 
+         .auth-footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #64748b;
+        }
+ 
+        .auth-footer a { color: #4f46e5; font-weight: 500; text-decoration: none; }
+        .auth-footer a:hover { text-decoration: underline; }
         /* Form fields */
         .form-group { margin-bottom: 16px; }
 

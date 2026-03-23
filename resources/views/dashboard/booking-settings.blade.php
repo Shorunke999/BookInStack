@@ -4,6 +4,7 @@
 
 @section('content')
 
+
 {{-- ── Tab nav ─────────────────────────────────────────────────────────────── --}}
 <div style="display:flex;gap:2px;margin-bottom:24px;border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;">
     @foreach([['mode','🗓','Mode'],['window','🕐','Hours'],['negotiate','💬','Negotiate'],['categories','📦','Categories'],['appearance','🎨','Widget']] as [$id,$icon,$label])
@@ -224,7 +225,7 @@
         $wcRadius   = $wc['border_radius'] ?? 14;
         $wcBranding = $wc['show_branding'] ?? true;
     @endphp
-    <form method="POST" action="{{ route('dashboard.widget-appearance.save') }}">
+    <form method="POST" action="{{ route('dashboard.widget-appearance.save') }}" enctype="multipart/form-data">
         @csrf
         <div class="card" style="margin-bottom:12px;">
             <h3 style="margin-bottom:4px;">Widget Appearance</h3>
@@ -252,10 +253,32 @@
             </div>
 
             <div id="wc-image-row" style="{{ $wcBgType==='image'?'':'display:none;' }}margin-bottom:14px;">
-                <div class="form-group" style="margin-bottom:0;">
-                    <label>Image URL</label>
-                    <input type="url" name="bg_image_url" value="{{ $wcBgImage }}" class="form-control" placeholder="https://yoursite.com/bg.jpg" />
+                <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px;">Background Image</label>
+                @if(!empty($wcBgImage))
+                    <div style="margin-bottom:10px;border-radius:8px;overflow:hidden;height:80px;background:url('{{ $wcBgImage }}') center/cover;">
+                        <div style="background:rgba(0,0,0,.35);height:100%;display:flex;align-items:center;justify-content:center;">
+                            <span style="color:#fff;font-size:11px;font-weight:600;">Current image</span>
+                        </div>
+                    </div>
+                @endif
+                <div style="border:2px dashed var(--border);border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;"
+                     id="wc-drop-zone"
+                     ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+                     ondragleave="this.style.borderColor='var(--border)'"
+                     ondrop="handleImageDrop(event)">
+                    <div style="font-size:24px;margin-bottom:6px;">🖼</div>
+                    <div style="font-size:13px;font-weight:600;color:var(--ink);">Drop image here or <label for="wc-bg-file" style="color:var(--accent);cursor:pointer;text-decoration:underline;">browse</label></div>
+                    <div style="font-size:11px;color:var(--muted);margin-top:4px;">JPG, PNG, WebP — max 2MB. Stored on your server.</div>
+                    <input type="file" id="wc-bg-file" name="bg_image_file" accept="image/jpeg,image/png,image/webp"
+                           style="display:none;" onchange="previewImage(this)" />
                 </div>
+                <div id="wc-img-preview" style="display:none;margin-top:10px;border-radius:8px;overflow:hidden;height:80px;position:relative;">
+                    <img id="wc-img-preview-img" style="width:100%;height:100%;object-fit:cover;" />
+                    <button type="button" onclick="clearImagePreview()"
+                            style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.5);border:none;color:#fff;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:14px;line-height:1;">✕</button>
+                </div>
+                {{-- Keep existing URL as fallback --}}
+                <input type="hidden" name="bg_image_url" id="wc-bg-image-url" value="{{ $wcBgImage }}" />
             </div>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
@@ -389,6 +412,42 @@ function setBgType(type) {
     document.getElementById('wc-bg-type').value = type;
     document.getElementById('wc-color-row').style.display = type === 'color' ? 'block' : 'none';
     document.getElementById('wc-image-row').style.display = type === 'image' ? 'block' : 'none';
+}
+
+function previewImage(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    if (file.size > 2 * 1024 * 1024) {
+        alert('Image must be under 2MB.');
+        input.value = '';
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        document.getElementById('wc-img-preview-img').src = e.target.result;
+        document.getElementById('wc-img-preview').style.display = 'block';
+        document.getElementById('wc-drop-zone').style.display   = 'none';
+    };
+    reader.readAsDataURL(file);
+}
+
+function handleImageDrop(event) {
+    event.preventDefault();
+    document.getElementById('wc-drop-zone').style.borderColor = 'var(--border)';
+    const file = event.dataTransfer.files[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    const input = document.getElementById('wc-bg-file');
+    input.files = dt.files;
+    previewImage(input);
+}
+
+function clearImagePreview() {
+    document.getElementById('wc-bg-file').value    = '';
+    document.getElementById('wc-img-preview').style.display  = 'none';
+    document.getElementById('wc-drop-zone').style.display    = 'block';
+    document.getElementById('wc-bg-image-url').value         = '';
 }
 
 const hash = location.hash.replace('#','');

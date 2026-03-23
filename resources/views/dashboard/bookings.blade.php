@@ -144,6 +144,10 @@
                                     <button type="submit" class="btn btn-outline btn-sm" style="font-size:11px; padding:3px 9px; color:var(--muted);">Undo</button>
                                 </form>
                             @endif
+                            <a href="{{ route('bookings.show', $b->reference) }}"
+                                class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 10px;">
+                                View
+                            </a>
                         </td>
                     @endif
                 </tr>
@@ -255,6 +259,10 @@
                                     <button type="submit" class="btn btn-outline btn-sm" style="font-size:11px; padding:3px 9px; color:var(--muted);">Undo</button>
                                 </form>
                             @endif
+                            <a href="{{ route('bookings.show', $b->reference) }}"
+                                class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 10px;">
+                                View
+                            </a>
                         </td>
                     @endif
                 </tr>
@@ -377,6 +385,10 @@
                                     <button type="submit" class="btn btn-outline btn-sm" style="font-size:11px; padding:3px 9px; color:var(--muted);">Undo</button>
                                 </form>
                             @endif
+                            <a href="{{ route('bookings.show', $b->reference) }}"
+                                class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 10px;">
+                                View
+                            </a>
                         </td>
                     @endif
                 </tr>

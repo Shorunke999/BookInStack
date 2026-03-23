@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class PaystackService
 {
@@ -19,6 +20,42 @@ class PaystackService
             ->throw(); // throw on 4xx/5xx
     }
 
+      // ─── BVN Verification ─────────────────────────────────────────────────────────
+ 
+    /**
+     * Verify BVN matches a bank account via Paystack BVN Match API.
+     *
+     * Requires Paystack to enable this endpoint on your account.
+     * Contact support@paystack.com to request access.
+     *
+     * Returns: [ verified => bool, first_name => ?string, last_name => ?string ]
+     */
+    public function verifyBvn(string $bvn, string $bankCode, string $accountNumber): array
+    {
+        try {
+            $response = $this->http->post('/bvn/match', [
+                'bvn'            => $bvn,
+                'bank_code'      => $bankCode,
+                'account_number' => $accountNumber,
+            ]);
+ 
+            $data = $response->json('data');
+ 
+            $verified = isset($data['account_number'])
+                && $data['account_number'] === true
+                && ($data['is_blacklisted'] ?? false) === false;
+ 
+            return [
+                'verified'   => $verified,
+                'first_name' => $data['first_name'] ?? null,
+                'last_name'  => $data['last_name']  ?? null,
+            ];
+ 
+        } catch (\Exception $e) {
+            Log::error('BVN verification API error', ['error' => $e->getMessage()]);
+            throw new \Exception('BVN verification failed: ' . $e->getMessage());
+        }
+    }
     // ─── Subaccounts ────────────────────────────────────────────────────────────
 
     /**
@@ -30,7 +67,7 @@ class PaystackService
         $developer = auth()->user()->effectiveDeveloper();
         $response = $this->http->post('/subaccount', [
             'business_name' => $data['business_name'],
-            'settlement_bank' => $data['bank_code'],
+            'settlement_bank' => $data['settlement_bank'],
             'account_number' => $data['account_number'],
             'percentage_charge' => $developer->platform_fee_percent, // 5 (Paystack uses integer %)
             'description' => "BookStackIn subaccount for {$data['business_name']}",
@@ -81,7 +118,7 @@ class PaystackService
         // Attach subaccount for split payment
         if (! empty($data['subaccount_code'])) {
             $payload['subaccount'] = $data['subaccount_code'];
-            $payload['bearer'] = 'subaccount'; // subaccount bears Paystack fees
+            $payload['bearer'] = 'account'; // subaccount bears Paystack fees
             // percentage_charge on the subaccount definition handles the split automatically
         }
 
@@ -90,6 +127,15 @@ class PaystackService
         return $response->json('data');
     }
 
+     public function updateSubaccountFee(string $subaccountCode, $feePercent): array
+    {
+        $response = $this->http->put("/subaccount/{$subaccountCode}", [
+            'percentage_charge' => intval($feePercent),
+        ]);
+ 
+        return $response->json('data');
+    }
+ 
     /**
      * Verify a transaction by reference.
      */

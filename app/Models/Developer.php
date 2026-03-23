@@ -20,8 +20,7 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
         'role',
         'owner_id',
 
-        'nin',
-        'nin_verified',
+        'bvn_verified',
 
         'enable_booking_window',
         'booking_window',
@@ -46,18 +45,18 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
          'enable_negotiate',
             'whatsapp_number',
             'platform_fee_percent',
+            'booking_expires_at'
 
     ];
 
     protected $hidden = [
         'password',
         'secret_key',
-        'remember_token',
-        'nin',
+        'remember_token'
     ];
 
     protected $casts = [
-        'nin_verified' => 'boolean',
+        'bvn_verified' => 'boolean',
         'password' => 'hashed',
         'enable_booking_window' => 'boolean',
         'booking_window' => 'array',
@@ -104,7 +103,7 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
 
     public function isActive(): bool
     {
-        return $this->status === 'active' && $this->nin_verified;
+        return $this->status === 'active' && $this->bvn_verified;
     }
 
     public function totalRevenue(): float

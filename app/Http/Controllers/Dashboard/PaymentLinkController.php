@@ -197,6 +197,8 @@ class PaymentLinkController extends Controller
             'adults'         => 1,
             'children'       => 0,
             'metadata'       => ['payment_link_token' => $token],
+            'booked_via'            => 'payment_link',
+            'payment_link_token'    => $token,
         ];
  
         if ($mode === 'reservation') {
@@ -232,8 +234,8 @@ class PaymentLinkController extends Controller
                     'description'        => $link->description,
                 ],
                 'subaccount'         => $link->developer->paystack_subaccount_code,
-                'bearer'             => 'subaccount',
-                'transaction_charge' => $link->developer->platformFeeKobo($amount),
+                'bearer'             => 'account',
+                // 'transaction_charge' => $link->developer->platformFeeKobo($amount),
             ]);
  
             return response()->json([
