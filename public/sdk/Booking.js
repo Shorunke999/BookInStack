@@ -771,8 +771,8 @@
               <label>Enter Amount (₦)</label>
               <input type="number" id="bks-custom-amount-input"
                      placeholder="Enter agreed amount"
-                     min="${cat.min_price ? cat.min_price/100 : 1}"
-                     ${cat.max_price ? 'max="' + cat.max_price/100 + '"' : ''}
+                     min="${cat.min_price ? cat.min_price : 1}"
+                     ${cat.max_price ? 'max="' + cat.max_price + '"' : ''}
                      step="0.01" />
               ${range ? '<div class="bks-price-range">' + range + '</div>' : ''}
             </div>`;
