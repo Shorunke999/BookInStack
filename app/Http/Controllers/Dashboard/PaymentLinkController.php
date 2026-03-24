@@ -220,7 +220,7 @@ class PaymentLinkController extends Controller
         try {
             $response = $this->paystack->initializeTransaction([
                 'customer_email'              => $link->customer_email,
-                'amount'             => $amount,
+                'amount'             => $amount * 100,
                 'booking_id'  =>  $booking->id,
                 'booking_reference' => $booking->reference,
                 'developer_id' => $link->developer_id,
