@@ -98,7 +98,7 @@
 
   const utils = {
     formatAmount(kobo) {
-      return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(kobo / 100);
+      return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(kobo);
     },
     isValidEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); },
     isValidAmount(amount) { return Number.isInteger(amount) && amount >= 100; },
@@ -436,7 +436,7 @@
         return;
       }
 
-      
+
       if (_enableNegotiate && mode.mode !== 'ticket') {
         const wa = _whatsappNumber.replace(/\D/g, '');
 
@@ -939,7 +939,7 @@
         const modeKey   = status.booking_mode || 'appointment';
         _modeConfig     = MODE_DEFAULTS[modeKey] || MODE_DEFAULTS.appointment;
         _catalog        = status.catalog       || [];
-        _widgetConfig   = status.widget_config || {}; 
+        _widgetConfig   = status.widget_config || {};
         _enableNegotiate = status.enable_negotiate;
         _bookingOpen    = status.open !== false;
         _bookingReason  = status.reason || null;
