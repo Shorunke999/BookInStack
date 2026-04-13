@@ -344,7 +344,7 @@
         }
         .bks-cat-card:hover   { border-color:#a5b4fc; background:#fafafe; }
         .bks-cat-card.selected { border-color:var(--bks-accent); background:rgba(79,70,229,.06); }
-        .bks-cat-name  { font-weight:700; font-size:14px; color:var(--bks-accent); }
+        .bks-cat-name  { font-weight:700; font-size:14px; color:#111827; }
         .bks-cat-price { font-size:13px; color:var(--bks-accent); font-weight:600; margin-top:2px; }
         .bks-cat-desc  { font-size:12px; color:#6b7280; margin-top:3px; }
         .bks-cat-meta  { font-size:11px; color:#9ca3af; margin-top:3px; }
@@ -439,7 +439,7 @@
 
       if (_enableNegotiate && mode.mode !== 'ticket') {
         const wa = _whatsappNumber.replace(/\D/g, '');
-
+        console.log('negotiation mode enabled with whatsapp number:', wa);
         // Build catalog options for negotiate mode
         const catOptions = catalog.length > 0
             ? catalog.map((cat, i) => `
@@ -519,7 +519,7 @@
 
         // ── Update WA link when category or name/email changes ────────────────────
         let selectedNegCat = firstCat || null;
-
+        console.log('whatsapp number is ', wa);
         function refreshWaLink() {
             const link = wrap.querySelector('#bks-wa-link');
             if (link) {
@@ -941,6 +941,7 @@
         _catalog        = status.catalog       || [];
         _widgetConfig   = status.widget_config || {};
         _enableNegotiate = status.enable_negotiate;
+        _whatsappNumber    = status.whatsapp_number || '';
         _bookingOpen    = status.open !== false;
         _bookingReason  = status.reason || null;
         console.info(`[BookInStack] Mode: ${modeKey}, catalog: ${_catalog.length} items, window open: ${_bookingOpen}`);

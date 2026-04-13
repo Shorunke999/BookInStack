@@ -77,7 +77,7 @@ class PaymentLinkController extends Controller
             ->where('developer_id', $developer->id)
             ->with('category')->firstOrFail();
 
-        $wa  = preg_replace('/\D/', '', $developer->whatsapp_number ?? '');
+        $wa  = preg_replace('/\D/', '', $link->customer_phone ?? '');
         $txt = urlencode($link->whatsappText());
         $whatsappUrl = $wa
             ? "https://wa.me/{$wa}?text={$txt}"
@@ -111,19 +111,19 @@ class PaymentLinkController extends Controller
     }
 
    // ── PUBLIC: init payment + create booking ─────────────────────────────────
- 
+
     public function publicPay(Request $request, string $token): JsonResponse
     {
         $link = PaymentLink::where('token', $token)
             ->where('status', 'pending')
             ->with('developer', 'category')
             ->firstOrFail();
- 
+
         if ($link->isExpired()) {
             $link->update(['status' => 'expired']);
             return response()->json(['message' => 'Payment link has expired.'], 422);
         }
- 
+
         // ── Booking window check ───────────────────────────────────────────────
         $dev = $link->developer;
         if ($dev->enable_booking_window && $dev->booking_window) {
@@ -134,7 +134,7 @@ class PaymentLinkController extends Controller
             $openDays  = $window['days']       ?? [];
             $openFrom  = $window['open_time']  ?? '00:00';
             $openUntil = $window['close_time'] ?? '23:59';
- 
+
             if (!in_array($dayName, $openDays)) {
                 return response()->json(['message' => 'Bookings are not accepted on ' . ucfirst($dayName) . 's.'], 422);
             }
@@ -142,9 +142,9 @@ class PaymentLinkController extends Controller
                 return response()->json(['message' => "Bookings are accepted between {$openFrom} and {$openUntil}."], 422);
             }
         }
- 
+
         $mode = $link->category?->booking_mode ?? $link->developer->booking_mode;
- 
+
         // ── Validate mode-specific fields ──────────────────────────────────────
         $rules = [
             'customer_name'  => 'nullable|string|max:100',
@@ -162,18 +162,18 @@ class PaymentLinkController extends Controller
             $rules['adults']   = 'nullable|integer|min:1';
             $rules['children'] = 'nullable|integer|min:0';
         }
- 
+
         $data = $request->validate($rules);
- 
+
         // ── Calculate final amount ─────────────────────────────────────────────
         $amount = $link->amount;
- 
+
         if ($mode === 'reservation' && $link->category) {
             $nights = max(1, \Carbon\Carbon::parse($data['check_in'])
                 ->diffInDays(\Carbon\Carbon::parse($data['check_out'])));
             $amount = $link->category->price * $nights;
         }
- 
+
         // if ($mode === 'ticket' && $link->category) {
         //     $adults      = (int) ($data['adults']   ?? 1);
         //     $children    = (int) ($data['children'] ?? 0);
@@ -182,7 +182,7 @@ class PaymentLinkController extends Controller
         //         : $link->category->price;
         //     $amount = ($link->category->price * $adults) + ($childPrice * $children);
         // }
- 
+
         // ── Create booking record ──────────────────────────────────────────────
         $payload = [
             'developer_id'   => $link->developer_id,
@@ -200,7 +200,7 @@ class PaymentLinkController extends Controller
             'booked_via'            => 'payment_link',
             'payment_link_token'    => $token,
         ];
- 
+
         if ($mode === 'reservation') {
             $payload['check_in']  = $data['check_in'];
             $payload['check_out'] = $data['check_out'];
@@ -213,9 +213,9 @@ class PaymentLinkController extends Controller
         //     $payload['adults']   = $data['adults']   ?? 1;
         //     $payload['children'] = $data['children'] ?? 0;
         // }
- 
+
         $booking = Booking::create($payload);
- 
+
         // ── Initialize Paystack ────────────────────────────────────────────────
         try {
             $response = $this->paystack->initializeTransaction([
@@ -237,7 +237,7 @@ class PaymentLinkController extends Controller
                 'bearer'             => 'account',
                 // 'transaction_charge' => $link->developer->platformFeeKobo($amount),
             ]);
- 
+
             return response()->json([
                 'authorization_url' => $response['authorization_url'],
                 'booking_reference' => $booking->reference,

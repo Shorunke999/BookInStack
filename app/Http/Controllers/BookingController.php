@@ -316,7 +316,6 @@ class BookingController extends Controller
             ->get()
             ->map(fn($cat) => $cat->toApiArray($mode))
             ->values();
-
         return response()->json([
             'open'         => $open,
             'reason'       => $reason,
@@ -349,7 +348,7 @@ class BookingController extends Controller
         $booking->update([
             'attended' => $data['attended'],
             'attended_at' => $data['attended'] ? now() : null,
-            'attended_by_id'  => auth()->id(),    
+            'attended_by_id'  => auth()->id(),
             'attendance_note' => $data['note'] ?? null,
         ]);
 
