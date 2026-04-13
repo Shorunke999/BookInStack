@@ -51,6 +51,14 @@ class VerifyPublicKey
             ], 401);
         }
 
+        $origin = request()->header('Origin');
+        $allowedDomains = $developer->allowed_domains ?? [];
+        // if (!in_array($origin, $allowedDomains)) {
+        //     return response()->json([
+        //         'error' => 'unauthorized_domain',
+        //         'message' => 'Unauthorized domain'
+        //     ], 403);
+        // }
         // Attach developer to request for use in controllers
         $request->merge(['developer' => $developer]);
 

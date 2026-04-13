@@ -7,7 +7,7 @@
 
 {{-- ── Tab nav ─────────────────────────────────────────────────────────────── --}}
 <div style="display:flex;gap:2px;margin-bottom:24px;border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;">
-    @foreach([['mode','🗓','Mode'],['window','🕐','Hours'],['negotiate','💬','Negotiate'],['categories','📦','Categories'],['appearance','🎨','Widget']] as [$id,$icon,$label])
+    @foreach([['mode','🗓','Mode'],['window','🕐','Hours'],['negotiate','💬','Negotiate'],['categories','📦','Categories'],['appearance','🎨','Widget'],['domains','🌐','Domains']] as [$id,$icon,$label])
         <button onclick="switchTab('{{ $id }}')" id="tab-{{ $id }}" style="
             padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;
             border:none;background:none;margin-bottom:-1px;transition:all .15s;
@@ -315,9 +315,76 @@
     </form>
 </div>
 
+{{-- ══ TAB 6 — ALLOWED DOMAINS ══════════════════════════════════════════════ --}}
+<div id="panel-domains" style="display:none;max-width:520px;">
+
+    <div class="card" style="margin-bottom:12px;">
+        <h3 style="margin-bottom:4px;">Allowed Domains</h3>
+
+        <p style="font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.5;">
+            Only these domains can load your booking widget.
+            Add domains where your widget will be embedded.
+        </p>
+
+        {{-- Add Domain --}}
+        <form method="POST" action="{{ route('dashboard.domains.store') }}" style="display:flex;gap:8px;margin-bottom:16px;">
+            @csrf
+
+            <input
+                type="text"
+                name="domain"
+                class="form-control"
+                placeholder="https://example.com"
+                required
+            />
+
+            <button type="submit" class="btn btn-primary btn-sm">
+                Add
+            </button>
+        </form>
+
+        {{-- Domain List --}}
+        @php
+            $domains = $developer->allowed_domains ?? [];
+        @endphp
+
+        @if(empty($domains))
+            <div style="padding:16px;background:var(--soft);border-radius:8px;font-size:13px;color:var(--muted);">
+                No domains added yet.
+            </div>
+        @else
+            <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+                @foreach($domains as $domain)
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);">
+                        <span style="font-size:13px;font-weight:500;">
+                            {{ $domain }}
+                        </span>
+
+                        <form method="POST" action="{{ route('dashboard.domains.delete') }}">
+                            @csrf
+                            @method('DELETE')
+
+                            <input type="hidden" name="domain" value="{{ $domain }}">
+
+                            <button
+                                type="submit"
+                                style="border:none;background:none;color:#ef4444;cursor:pointer;font-size:14px;"
+                                onclick="return confirm('Remove domain?')"
+                            >
+                                ✕
+                            </button>
+                        </form>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+
+    </div>
+</div>
+
 @push('scripts')
 <script>
-const TABS = ['mode','window','negotiate','categories','appearance'];
+const TABS = ['mode','window','negotiate','categories','appearance','domains'];
 
 function switchTab(id) {
     TABS.forEach(t => {

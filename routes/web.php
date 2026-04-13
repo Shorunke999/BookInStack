@@ -7,6 +7,7 @@ use App\Http\Controllers\Dashboard\PaymentLinkController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Dashboard\NinController;
 use App\Http\Controllers\Dashboard\StaffController;
+use App\Http\Controllers\DeveloperDomainController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -36,12 +37,12 @@ Route::middleware('guest')->group(function () {
     Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
     Route::post('/reset-password',       [AuthController::class, 'resetPassword'])->name('password.update');
 
- 
+
 // ─── Email verification (auth not required — link comes via email) ────────────
 Route::get('/email/verify',                 [AuthController::class, 'verificationNotice'])->name('verification.notice');
 Route::get('/email/verify/{id}/{hash}',     [AuthController::class, 'verificationVerify'])->middleware(['signed'])->name('verification.verify');
 Route::post('/email/verification-notification', [AuthController::class, 'verificationSend'])->middleware(['throttle:6,1'])->name('verification.send');
- 
+
 });
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 // ─── Authenticated dashboard routes ──────────────────────────────────────────
@@ -59,31 +60,31 @@ Route::middleware('auth')->group(function () {
     Route::post('/bookings/{reference}/attend', [BookingController::class, 'dashboardMarkAttended'])
         ->name('bookings.attend');
 
-     
+
     // Payment links (dashboard)
     Route::get   ('/payment-links',                [PaymentLinkController::class, 'index'])->name('payment-links.index');
     Route::get   ('/payment-links/create',         [PaymentLinkController::class, 'create'])->name('payment-links.create');
     Route::post  ('/payment-links',                [PaymentLinkController::class, 'store'])->name('payment-links.store');
     Route::get   ('/payment-links/{token}',        [PaymentLinkController::class, 'showDashboard'])->name('payment-links.show-dashboard');
     Route::post  ('/payment-links/{token}/cancel', [PaymentLinkController::class, 'cancel'])->name('payment-links.cancel');
-    
+
      // QR Scanner — mobile only, all roles
     Route::get('/scan', function () {
         $developer = auth()->user()->effectiveDeveloper();
         return view('dashboard.scan');
     })->name('scan');
- 
+
     Route::get('/scan/lookup/{reference}', function (string $reference) {
         $developer = auth()->user()->effectiveDeveloper();
         $booking   = \App\Models\Booking::where('reference', $reference)
             ->where('developer_id', $developer->id)
             ->with('category')
             ->first();
- 
+
         if (!$booking) {
             return response()->json(['message' => 'Booking not found.'], 404);
         }
- 
+
         return response()->json(['booking' => [
             'reference'     => $booking->reference,
             'customer_name' => $booking->customer_name,
@@ -114,6 +115,11 @@ Route::middleware('auth')->group(function () {
         Route::delete('/settings/categories/{category}', [BookingCategoryController::class, 'destroy'])->name('categories.destroy');
         Route::post  ('/settings/categories/reorder',    [BookingCategoryController::class, 'reorder'])->name('categories.reorder');
 
+        Route::post('/domains', [DeveloperDomainController::class, 'store'])
+            ->name('dashboard.domains.store');
+
+        Route::delete('/domains', [DeveloperDomainController::class, 'delete'])
+            ->name('dashboard.domains.delete');
 
         // Staff management
         Route::get('/staff', [StaffController::class, 'index'])->name('staff.index');

@@ -344,7 +344,7 @@
         }
         .bks-cat-card:hover   { border-color:#a5b4fc; background:#fafafe; }
         .bks-cat-card.selected { border-color:var(--bks-accent); background:rgba(79,70,229,.06); }
-        .bks-cat-name  { font-weight:700; font-size:14px; color:#111827; }
+        .bks-cat-name  { font-weight:700; font-size:14px; color:var(--bks-accent); }
         .bks-cat-price { font-size:13px; color:var(--bks-accent); font-weight:600; margin-top:2px; }
         .bks-cat-desc  { font-size:12px; color:#6b7280; margin-top:3px; }
         .bks-cat-meta  { font-size:11px; color:#9ca3af; margin-top:3px; }
@@ -771,8 +771,8 @@
               <label>Enter Amount (₦)</label>
               <input type="number" id="bks-custom-amount-input"
                      placeholder="Enter agreed amount"
-                     min="${cat.min_price ? cat.min_price : 1}"
-                     ${cat.max_price ? 'max="' + cat.max_price + '"' : ''}
+                     min="${cat.min_price ? cat.min_price/100 : 1}"
+                     ${cat.max_price ? 'max="' + cat.max_price/100 + '"' : ''}
                      step="0.01" />
               ${range ? '<div class="bks-price-range">' + range + '</div>' : ''}
             </div>`;

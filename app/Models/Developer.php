@@ -45,7 +45,8 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
          'enable_negotiate',
             'whatsapp_number',
             'platform_fee_percent',
-            'booking_expires_at'
+            'booking_expires_at',
+            'allowed_domains'
 
     ];
 
@@ -63,6 +64,7 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
         'email_verified_at' => 'datetime',
          'widget_config'=> 'array',
          'platform_fee_percent' => 'decimal:2',
+         'allowed_domains' => 'array',
     ];
 
     // ─── Relationships ──────────────────────────────────────────────────────────

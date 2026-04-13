@@ -38,8 +38,9 @@
         <input type="number" name="price" id="price-input{{ $suffix }}" class="form-control"
                value="{{ $category ? $category->price  : old('price', '') }}"
                placeholder="e.g. 5000"
-               min="1" step="0.01"
+               min="0" step="0.01"
                {{ ($category && !$category->fixed_price) ? '' : 'required' }} />
+
         <span style="font-size:11px; color:var(--muted);">Enter in Naira — stored as kobo automatically</span>
     </div>
 
