@@ -6,6 +6,20 @@ It combines flexible booking systems, payment infrastructure, and operational to
 
 ---
 
+## 🌍 Live Usage / Demos
+
+Here are examples of BookinStack being used in real scenarios:
+
+- 🔗 Widget Integration Example 1: https://chipper-elf-4baf92.netlify.app
+- 🔗 Widget Integration Example 2: https://curious-dango-13d118.netlify.app
+
+These demonstrate how BookinStack can be embedded into external websites using a lightweight widget to handle bookings and payments.
+
+- 🚀 Main Application (Demo):
+  https://bookinstack-main-wuhnit.free.laravel.cloud
+
+---
+
 ## 🚀 Core Features
 
 - 🗓 **Three booking modes**
