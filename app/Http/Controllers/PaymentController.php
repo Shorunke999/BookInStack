@@ -44,6 +44,8 @@ class PaymentController extends Controller
                 'booking_reference' => $booking->reference,
                 'description' => $booking->description,
                 'subaccount_code' => $developer->paystack_subaccount_code,
+                'transaction_charge' => $developer->platformFeeKobo($booking->amount),
+                'bearer'             => 'subaccount',
                 'callback_url' => $data['callback_url'] ?? null,
             ]);
 

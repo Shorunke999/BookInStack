@@ -36,6 +36,12 @@ class Booking extends Model
         'preferred_time',
         'adults',
         'children',
+        'booked_by_id',
+        'booked_by_type',
+        'booked_via',
+        'booking_expires_at',
+        'attended_by_id',
+        'payment_link_token'
 
     ];
 
@@ -76,6 +82,10 @@ class Booking extends Model
     {
         return $this->hasOne(Payment::class);
     }
+
+    // Relations
+public function bookedBy()   { return $this->belongsTo(\App\Models\Developer::class, 'booked_by_id'); }
+public function attendedBy() { return $this->belongsTo(\App\Models\Developer::class, 'attended_by_id'); }
 
     // ─── Helpers ────────────────────────────────────────────────────────────────
 

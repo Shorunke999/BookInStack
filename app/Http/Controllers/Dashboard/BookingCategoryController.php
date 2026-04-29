@@ -86,9 +86,16 @@ class BookingCategoryController extends Controller
         $rules = [
             'name'        => 'required|string|max:80',
             'description' => 'nullable|string|max:255',
-            'price'       => 'required|integer|min:100', // kobo
-             'total_slots' => 'nullable|integer|min:1',
+            'price'       => 'nullable|integer|min:100', // kobo
+            'total_slots' => 'nullable|integer|min:1',
             'status'      => 'in:active,inactive',
+
+            'checkin_start_date'  => 'nullable|date',
+            'checkin_end_date'    => 'nullable|date|after_or_equal:checkin_start_date',
+            'checkin_start_time'  => 'nullable|date_format:H:i',
+            'checkin_end_time'    => 'nullable|date_format:H:i',
+            'checkin_days_before' => 'nullable|integer|min:0|max:30',
+            'checkin_days_after'  => 'nullable|integer|min:0|max:30',
         ];
 
         if ($mode === 'ticket') {

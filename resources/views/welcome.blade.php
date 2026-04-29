@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BookStackIn — Bookings & Payments for Developers</title>
+    <title>BookInStack — Bookings & Payments for Businessess</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <style>
@@ -205,41 +205,7 @@
 
         .btn-hero-ghost:hover { background: rgba(255,255,255,.1); }
 
-        /* ── Code preview ───────────────────────────────────── */
-        .hero-code {
-            margin-top: 56px;
-            background: #1e1e2e;
-            border: 1px solid rgba(255,255,255,.08);
-            border-radius: 14px;
-            padding: 22px 24px;
-            text-align: left;
-            max-width: 540px;
-            margin-left: auto;
-            margin-right: auto;
-            box-shadow: 0 20px 60px rgba(0,0,0,.4);
-        }
-
-        .code-dots {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 16px;
-        }
-
-        .code-dots span {
-            width: 10px; height: 10px;
-            border-radius: 50%;
-        }
-
-        .code-dots .r { background: #ff5f56; }
-        .code-dots .y { background: #ffbd2e; }
-        .code-dots .g { background: #27c93f; }
-
-        .hero-code pre {
-            font-family: 'DM Mono', monospace;
-            font-size: 13px;
-            line-height: 1.75;
-            color: #cdd6f4;
-        }
+        
 
         .kw  { color: #cba6f7; }
         .str { color: #a6e3a1; }
@@ -534,7 +500,7 @@
 
 <!-- Nav -->
 <nav>
-    <a href="/" class="nav-logo">BookStack<span>In</span></a>
+    <a href="/" class="nav-logo">BookIn<span>Stack</span></a>
     <div class="nav-links">
         <a href="#features" class="nav-link">Features</a>
         <a href="#pricing" class="nav-link">Pricing</a>
@@ -546,40 +512,37 @@
 <!-- Hero -->
 <section class="hero">
     <div class="hero-inner">
-        <div class="hero-pill">⚡ For Nigerian Developers</div>
+        <div class="hero-pill">⚡ For Nigerian Bussinesses</div>
 
-        <h1>
-            Accept bookings &<br />
-            payments with<br />
-            <span class="grad">three lines of code</span>
+          <h1>
+            Your business,<br />
+            fully booked &<br />
+            <span class="grad">getting paid online</span>
         </h1>
-
+ 
         <p class="hero-sub">
-            BookStackIn handles your entire booking and payment infrastructure.
-            Verify once, integrate anywhere, get paid instantly.
+            BookInStack gives your business a professional booking and payment
+            system — no tech skills needed. Set up in minutes, start earning today.
         </p>
 
         <div class="hero-actions">
             <a href="{{ route('register') }}" class="btn-hero-primary">Start for free →</a>
             <a href="#how-it-works" class="btn-hero-ghost">See how it works</a>
         </div>
-
-        <div class="hero-code">
-            <div class="code-dots">
-                <span class="r"></span><span class="y"></span><span class="g"></span>
+            <div style="display:flex;flex-direction:column;gap:12px;margin-top:24px;max-width:480px;margin-left:auto;margin-right:auto;">
+                <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.06);padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.1);">
+                    <span style="font-size:22px;">📋</span>
+                    <span style="font-size:14px;color:rgba(255,255,255,.85);">Customers book and pay directly from your website</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.06);padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.1);">
+                    <span style="font-size:22px;">💳</span>
+                    <span style="font-size:14px;color:rgba(255,255,255,.85);">Payments hit your bank account — 95% goes straight to you</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.06);padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.1);">
+                    <span style="font-size:22px;">🎟</span>
+                    <span style="font-size:14px;color:rgba(255,255,255,.85);">Ticket QR codes, check-in tracking, staff accounts — all included</span>
+                </div>
             </div>
-            <pre><span class="cm">// Your entire booking flow</span>
-<span class="fn">Booking</span>.<span class="fn">init</span>({ <span class="fn">publicKey</span>: <span class="str">'pk_live_xxx'</span>, <span class="fn">returnUrl</span>: <span class="str">'/success'</span> });
-
-<span class="kw">const</span> booking = <span class="kw">await</span> <span class="fn">Booking</span>.<span class="fn">create</span>({
-  amount:         <span class="nm">500000</span>,   <span class="cm">// ₦5,000</span>
-  customer_email: <span class="str">'user@example.com'</span>,
-  description:    <span class="str">'Consultation'</span>,
-});
-
-<span class="kw">await</span> <span class="fn">Booking</span>.<span class="fn">pay</span>(booking.reference);
-<span class="cm">// → Paystack checkout → 95% to you, instantly</span></pre>
-        </div>
     </div>
 </section>
 
@@ -674,22 +637,15 @@
         <div class="section-label" style="display:inline-block;">Pricing</div>
         <h2 style="max-width:100%; text-align:center;">Pay only when you earn</h2>
         <p class="section-sub" style="max-width:400px; margin:12px auto 0;">
-            No monthly fees. No setup costs. We take 5% only when a payment succeeds.
+            No monthly fees. No setup costs.
         </p>
     </div>
 
     <div class="pricing-card">
         <div class="pricing-badge">Simple, transparent</div>
-        <div class="pricing-price">
-            1<sup>%</sup>
-            <span class="per">per transaction</span>
-        </div>
-        <p class="pricing-desc">You keep ₦99 of every ₦100. We take ₦1. That's it.</p>
-
         <ul class="pricing-features">
             <li>Unlimited bookings</li>
             <li>Paystack-powered checkout</li>
-            <li>Automatic 99/1 split via subaccounts</li>
             <li>Booking window controls</li>
             <li>Staff accounts</li>
             <li>Revenue dashboard</li>
@@ -712,8 +668,8 @@
 
 <!-- Footer -->
 <footer>
-    <div class="logo">BookStack<span>In</span></div>
-    <p>© {{ date('Y') }} BookStackIn. Built for Nigerian developers.</p>
+    <div class="logo">BookIn<span>Stack</span></div>
+    <p>© {{ date('Y') }} BookInStack. Built for Nigerian Businesses.</p>
 </footer>
 
 </body>

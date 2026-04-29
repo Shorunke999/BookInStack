@@ -66,6 +66,7 @@ class AuthController extends Controller
             'business_name' => 'required|string|max:150',
             'email'         => 'required|email|unique:developers,email',
             'password'      => ['required', 'confirmed', PasswordRule::min(8)->mixedCase()->numbers()],
+            'terms' => 'accepted'
         ]);
 
         $developer = Developer::create([
@@ -77,7 +78,7 @@ class AuthController extends Controller
         ]);
 
         // Fires the Registered event → triggers email verification notification
-        defer(fn() => event(new Registered($developer)));
+        defer(fn() =>event(new Registered($developer)));
 
         return redirect()->route('verification.notice')
             ->with('success', 'Account created! Please check your email to verify your address.');

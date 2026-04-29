@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="csrf-token" content="{{ csrf_token() }}" />
-    <title>@yield('title', 'Dashboard') — BookStackIn</title>
+    <title>@yield('title', 'Dashboard') — BookInStack</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAzMiAzMic+PHJlY3Qgd2lkdGg9JzMyJyBoZWlnaHQ9JzMyJyByeD0nNicgZmlsbD0nIzRmNDZlNScvPjx0ZXh0IHg9JzUwJScgeT0nNTQlJyBkb21pbmFudC1iYXNlbGluZT0nbWlkZGxlJyB0ZXh0LWFuY2hvcj0nbWlkZGxlJyBmb250LWZhbWlseT0nc3lzdGVtLXVpJyBmb250LXdlaWdodD0nNzAwJyBmb250LXNpemU9JzE0JyBmaWxsPSd3aGl0ZSc+QjwvdGV4dD48L3N2Zz4=" />
    <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -64,7 +64,6 @@
             z-index: 50;
             transition: transform .25s cubic-bezier(.4,0,.2,1);
         }
-
         .sidebar-brand {
             padding: 22px 20px 18px;
             border-bottom: 1px solid rgba(255,255,255,.08);
@@ -108,6 +107,7 @@
             flex: 1;
             padding: 12px 10px;
             overflow-y: auto;
+            padding-bottom: 80px;
         }
 
         .nav-section-label {
@@ -495,6 +495,13 @@
         ──────────────────────────────────────────────────── */
         @media (max-width: 768px) {
 
+             .sidebar-footer {
+                position: sticky;
+                bottom: 0;
+                background: var(--sidebar-bg, #0e0b07);
+                padding: 12px 10px;
+                border-top: 1px solid rgba(255,255,255,.08);
+            }
             /* Sidebar slides off left by default */
             #sidebar {
                 transform: translateX(-100%);
@@ -558,7 +565,7 @@
     <div class="sidebar-brand">
         <div>
             <div class="logo">BookStack<span>In</span></div>
-            <div class="logo-sub">Developer Console</div>
+            <div class="logo-sub">Business Console</div>
         </div>
         {{-- Close button shown only on mobile --}}
         <button class="sidebar-close" onclick="closeSidebar()" aria-label="Close menu">
@@ -569,27 +576,39 @@
     </div>
 
     <nav class="sidebar-nav">
+        @if(auth()->user()->isSuperAdmin())
+            <div class="nav-section-label" style="margin-top:4px;color:var(--accent);font-size:9px;">SUPERADMIN</div>
+            @include('components.nav-item', ['route'=>'superadmin.dashboard',  'label'=>'SA Dashboard', 'icon'=>'grid'])
+            @include('components.nav-item', ['route'=>'superadmin.developers', 'label'=>'Developers',   'icon'=>'users'])
+            @include('components.nav-item', ['route'=>'superadmin.revenue',    'label'=>'Revenue',      'icon'=>'credit-card'])
+        @else
+            <div class="nav-section-label">Main</div>
 
-        <div class="nav-section-label">Main</div>
-
-        @include('components.nav-item', ['route' => 'dashboard',          'label' => 'Overview',  'icon' => 'grid'])
-        @include('components.nav-item', ['route' => 'dashboard.bookings', 'label' => 'Bookings',  'icon' => 'list'])
-        @include('components.nav-item', ['route' => 'dashboard.payments', 'label' => 'Payments',  'icon' => 'credit-card'])
-
-        @if(auth()->user()->isAdmin())
-            <div class="nav-section-label" style="margin-top:8px;">Admin</div>
-            @include('components.nav-item', ['route' => 'dashboard.api-keys',        'label' => 'API Keys',    'icon' => 'key'])
-            @include('components.nav-item', ['route' => 'dashboard.integration',      'label' => 'Integration', 'icon' => 'code'])
-            @include('components.nav-item', ['route' => 'dashboard.booking-settings', 'label' => 'Settings',    'icon' => 'settings'])
-            @include('components.nav-item', ['route' => 'staff.index',                'label' => 'Staff',       'icon' => 'users'])
+            @include('components.nav-item', ['route' => 'dashboard',          'label' => 'Overview',  'icon' => 'grid'])
+            @include('components.nav-item', ['route' => 'dashboard.bookings', 'label' => 'Bookings',  'icon' => 'list'])
+            @include('components.nav-item', ['route' => 'payment-links.index',   'label' => 'Payment Links',  'icon' => 'link'])
+            @if(preg_match('/Android|iPhone|iPad|iPod|Mobile/i', request()->header('User-Agent', '')))
+                @include('components.nav-item', ['route' => 'scan', 'label' => 'Scan QR', 'icon' => 'qr'])
+            @endif
+            
+            @if(auth()->user()->isAdmin())
+                <div class="nav-section-label" style="margin-top:8px;">Admin</div>
+                @include('components.nav-item', ['route' => 'dashboard.api-keys',        'label' => 'API Keys',    'icon' => 'key'])
+                @include('components.nav-item', ['route' => 'dashboard.integration',      'label' => 'Integration', 'icon' => 'code'])
+                @include('components.nav-item', ['route' => 'dashboard.booking-settings', 'label' => 'Settings',    'icon' => 'settings'])
+                @include('components.nav-item', ['route' => 'staff.index',                'label' => 'Staff',       'icon' => 'users'])
+            @endif
         @endif
+      
 
     </nav>
 
     <div class="sidebar-footer">
-        <form method="POST" action="{{ route('logout') }}" style="margin:0;">
+        <form method="POST" action="{{ route('logout') }}" style="margin:0; padding-bottom: env(safe-area-inset-bottom, 16px);">
             @csrf
-            <button type="submit" class="nav-item logout">
+            <button type="submit" class="nav-item logout"
+                    style="background:none; border:none; cursor:pointer; width:100%; color:#ef4444;
+                        padding-bottom: 20px;">
                 @include('components.icon', ['name' => 'logout'])
                 Sign Out
             </button>

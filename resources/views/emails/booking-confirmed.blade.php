@@ -293,7 +293,7 @@
 
   {{-- ── Header ─────────────────────────────────────────── --}}
   <div class="email-header">
-    <div class="email-logo">BookStack<span>In</span></div>
+    <div class="email-logo">BookIn<span>Stack</span></div>
     <div class="email-mode-pill">
       @if($modeConfig['mode'] === 'ticket') 🎟 Ticket
       @elseif($modeConfig['mode'] === 'reservation') 🏨 Reservation
@@ -319,16 +319,43 @@
       your {{ strtolower($modeConfig['label']) }} has been confirmed and payment received.
     </div>
 
-    {{-- ── TICKET: barcode block ─────────────────────────── --}}
+    {{-- ── TICKET: QR code block ──────────────────────────── --}}
     @if($modeConfig['mode'] === 'ticket')
       <div class="ticket-block">
-        <div style="font-size:13px; color:#64748b; margin-bottom:4px; text-transform:uppercase; letter-spacing:.06em; font-weight:600;">
-          {{ $booking->description }}
+        {{-- Business name --}}
+        <div style="font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:.12em; font-weight:600; margin-bottom:6px;">
+          {{ $developer->business_name ?? $developer->name }}
         </div>
+
+        {{-- Ticket / event name --}}
+        <div style="font-size:17px; font-weight:800; color:#0d0d14; margin-bottom:2px; letter-spacing:-.2px;">
+          {{ $booking->category?->name ?? $booking->description }}
+        </div>
+        @if($booking->category?->description)
+          <div style="font-size:12px; color:#64748b; margin-bottom:8px;">
+            {{ $booking->category->description }}
+          </div>
+        @endif
+
         <div class="ticket-ref">{{ $booking->reference }}</div>
-        <div class="ticket-barcode"></div>
+
+        {{-- QR Code --}}
+        @if($qrCodeSvg)
+          <div style="margin:14px auto; width:160px; height:160px; padding:8px; background:#fff; border:2px solid #e2e8f0; border-radius:10px;">
+            {!! $qrCodeSvg !!}
+          </div>
+          <div style="font-size:11px; color:#94a3b8; margin-bottom:8px; letter-spacing:.04em;">
+            Scan at entry · Ref: {{ $booking->reference }}
+          </div>
+        @else
+          <div class="ticket-barcode"></div>
+        @endif
+
         <div class="ticket-qty">
-          🎟 {{ $booking->quantity }} × ticket{{ $booking->quantity > 1 ? 's' : '' }}
+          🎟 {{ $booking->adults ?? $booking->quantity ?? 1 }} × ticket{{ ($booking->adults ?? 1) > 1 ? 's' : '' }}
+          @if(($booking->children ?? 0) > 0)
+            · {{ $booking->children }} child{{ $booking->children > 1 ? 'ren' : '' }}
+          @endif
         </div>
       </div>
     @endif
@@ -349,6 +376,16 @@
             </div>
           @endif
         </div>
+      </div>
+    @endif
+
+    {{-- QR for appointment & reservation (compact) --}}
+    @if($modeConfig['mode'] !== 'ticket' && $qrCodeSvg)
+      <div style="text-align:center; margin:16px 0;">
+        <div style="display:inline-block; padding:8px; background:#fff; border:1px solid #e2e8f0; border-radius:8px; width:120px; height:120px;">
+          {!! $qrCodeSvg !!}
+        </div>
+        <div style="font-size:11px; color:#94a3b8; margin-top:6px; font-family:monospace;">{{ $booking->reference }}</div>
       </div>
     @endif
 
@@ -398,11 +435,11 @@
       @if($modeConfig['mode'] === 'ticket')
         <div class="detail-row">
           <span class="detail-label">Tickets</span>
-          <span class="detail-value">{{ $booking->quantity }} × ₦{{ number_format($booking->amount / 100, 2) }}</span>
+          <span class="detail-value">{{ $booking->quantity }} × ₦{{ number_format($booking->amount , 2) }}</span>
         </div>
         <div class="detail-row">
           <span class="detail-label">Total Paid</span>
-          <span class="detail-value amount">₦{{ number_format(($booking->amount * $booking->quantity) / 100, 2) }}</span>
+          <span class="detail-value amount">₦{{ number_format(($booking->amount * $booking->quantity) , 2) }}</span>
         </div>
 
       @elseif($modeConfig['mode'] === 'reservation')
@@ -420,7 +457,7 @@
         </div>
         <div class="detail-row">
           <span class="detail-label">Total Paid</span>
-          <span class="detail-value amount">₦{{ number_format(($booking->amount * $nights) / 100, 2) }}</span>
+          <span class="detail-value amount">₦{{ number_format(($booking->amount * $nights) , 2) }}</span>
         </div>
 
       @else
@@ -438,7 +475,7 @@
         @endif
         <div class="detail-row">
           <span class="detail-label">Amount Paid</span>
-          <span class="detail-value amount">₦{{ number_format($booking->amount / 100, 2) }}</span>
+          <span class="detail-value amount">₦{{ number_format($booking->amount , 2) }}</span>
         </div>
       @endif
 
@@ -460,9 +497,9 @@
     {{-- Ticket instructions --}}
     @if($modeConfig['mode'] === 'ticket')
       <div class="note-box">
-        🎫 <strong>Present this email or your reference code at entry.</strong>
-        Your reference <strong>{{ $booking->reference }}</strong> will be scanned or verified manually.
-        One email covers all {{ $booking->quantity }} ticket{{ $booking->quantity > 1 ? 's' : '' }}.
+        🎫 <strong>Your ticket is attached to this email as a PDF.</strong>
+        Download and save it — present it at entry (printed or on your phone).
+        Your reference <strong>{{ $booking->reference }}</strong> will be scanned at the gate.
       </div>
     @elseif($modeConfig['mode'] === 'reservation')
       <div class="note-box">
@@ -483,7 +520,7 @@
     <p>
       This is an automated confirmation from
       <strong>{{ $developer->business_name ?: $developer->name }}</strong>
-      powered by <a href="https://bookstack.dev">BookStack</a>.
+      powered by <a href="https://bookinstack.dev">BookInStack</a>.
     </p>
     <p style="margin-top:8px;">
       Keep your reference number: <strong style="color:#4f46e5;">{{ $booking->reference }}</strong>

@@ -41,6 +41,8 @@
   let _catalog       = [];   // BookingCategory[] from API
   let _widgetConfig      = {};   // appearance from developer's CMS settings
   let _reservationUnit   = 'night'; // 'night' | 'day'
+  let _enableNegotiate   = false;   // show negotiate button on widget
+  let _whatsappNumber    = '';      // developer WhatsApp number
 
   // ─── Mode defaults (fallback when API is unreachable) ─────────────────────────
 
@@ -182,7 +184,7 @@
         .bks-widget {
           --bks-accent: #4f46e5;
           font-family: 'DM Sans','Segoe UI',system-ui,sans-serif;
-          max-width: 420px; background: #fff;
+          max-width: 420px;
           border: 1px solid #e5e7eb; border-radius: 14px;
           padding: 26px;
           box-shadow: 0 1px 4px rgba(0,0,0,.06), 0 6px 24px rgba(0,0,0,.05);
@@ -301,6 +303,36 @@
           background:#f3f4f6; color:#374151; padding:4px 12px; border-radius:6px;
         }
 
+        /* Negotiate button */
+        .bks-negotiate {
+          width:100%; padding:11px; margin-top:8px;
+          background:transparent; color:var(--bks-accent);
+          border:1px solid var(--bks-accent); border-radius:9px;
+          font-size:13px; font-weight:600; font-family:inherit;
+          cursor:pointer; transition:all .15s; letter-spacing:-.01em;
+          display:flex; align-items:center; justify-content:center; gap:7px;
+        }
+        .bks-negotiate:hover { background:rgba(79,70,229,.06); }
+        /* Custom amount input */
+        .bks-custom-amount {
+          margin-bottom:12px;
+        }
+        .bks-custom-amount label {
+          display:block; font-size:12px; font-weight:600;
+          color:#374151; margin-bottom:6px;
+        }
+        .bks-custom-amount input {
+          width:100%; padding:10px 12px; border:1px solid #e5e7eb;
+          border-radius:8px; font-size:15px; font-weight:600;
+          font-family:inherit; color:#111827;
+        }
+        .bks-custom-amount input:focus {
+          outline:none; border-color:var(--bks-accent);
+          box-shadow:0 0 0 3px rgba(79,70,229,.1);
+        }
+        .bks-price-range {
+          font-size:11px; color:#9ca3af; margin-top:4px;
+        }
         .bks-powered { text-align:center; margin-top:14px; font-size:11px; color:#d1d5db; }
         .bks-powered a { color:#a5b4fc; text-decoration:none; }
 
@@ -356,15 +388,23 @@
 
       // ── Apply developer CMS appearance ────────────────────────────────────────
       const wc     = _widgetConfig || {};
-      const accent = wc.accent_color  || '#4f46e5';
-      if (wc.border_radius !== undefined) wrap.style.borderRadius = wc.border_radius + 'px';
+      const accent = wc.accent_color || '#4f46e5';
+
+      // Apply background — always set explicitly, never rely on CSS default
       if (wc.bg_type === 'color' && wc.bg_color) {
         wrap.style.background = wc.bg_color;
       } else if (wc.bg_type === 'image' && wc.bg_image_url) {
-        wrap.style.backgroundImage    = `url(${wc.bg_image_url})`;
-        wrap.style.backgroundSize     = 'cover';
-        wrap.style.backgroundPosition = 'center';
+        wrap.style.background           = 'transparent';
+        wrap.style.backgroundImage      = `url('${wc.bg_image_url}')`;
+        wrap.style.backgroundSize       = 'cover';
+        wrap.style.backgroundPosition   = 'center';
+        wrap.style.backgroundRepeat     = 'no-repeat';
+        wrap.style.setProperty('--bks-field-bg', 'rgba(255,255,255,0.88)');
+      } else {
+        wrap.style.background = '#fff';
       }
+
+      if (wc.border_radius !== undefined) wrap.style.borderRadius = wc.border_radius + 'px';
       wrap.style.setProperty('--bks-accent', accent);
 
       // ── Closed / no-catalog states ────────────────────────────────────────────
@@ -393,6 +433,114 @@
           </div>
           <div class="bks-powered">Powered by <a href="https://bookinstack.dev" target="_blank">BookInStack</a></div>`;
         container.appendChild(wrap);
+        return;
+      }
+
+
+      if (_enableNegotiate && mode.mode !== 'ticket') {
+        const wa = _whatsappNumber.replace(/\D/g, '');
+        console.log('negotiation mode enabled with whatsapp number:', wa);
+        // Build catalog options for negotiate mode
+        const catOptions = catalog.length > 0
+            ? catalog.map((cat, i) => `
+                <div class="bks-cat-card ${i === 0 ? 'selected' : ''}"
+                    data-id="${cat.id}"
+                    data-name="${cat.name}"
+                    data-price="${cat.price}"
+                    data-neg-trigger
+                    style="cursor:pointer;">
+                  <div class="bks-cat-name">${cat.name}</div>
+                  <div class="bks-cat-price">${utils.formatAmount(cat.price)}</div>
+                  ${cat.description ? `<div class="bks-cat-desc">${cat.description}</div>` : ''}
+                </div>`).join('')
+            : '';
+
+        const firstCat = catalog[0];
+
+        wrap.innerHTML = `
+          <div class="bks-header">
+            <h3>${mode.cta}</h3>
+            <span class="bks-mode-badge">${mode.label}</span>
+          </div>
+
+          ${catOptions ? `
+            <div class="bks-field" style="margin-bottom:14px;">
+              <label>${mode.desc_label}</label>
+              <div class="bks-catalog" id="bks-neg-catalog">${catOptions}</div>
+            </div>` : ''}
+
+          <div class="bks-field">
+            <label>Your Name</label>
+            <input type="text" id="bks-neg-name" placeholder="Full name" />
+          </div>
+          <div class="bks-field" style="margin-bottom:20px;">
+            <label>Your Email <span style="font-weight:400;color:#9ca3af;">(optional)</span></label>
+            <input type="text" id="bks-neg-email" placeholder="you@email.com" />
+          </div>
+
+          <div style="text-align:center; padding:4px 0 12px;">
+            <div style="font-size:13px; color:#6b7280; line-height:1.6; margin-bottom:16px;">
+              Select what you're interested in, then chat with us on WhatsApp to discuss pricing.
+              We'll send you a secure payment link once agreed.
+            </div>
+            <a id="bks-wa-link" href="https://wa.me/${wa}?text=${encodeURIComponent(buildNegotiateText(firstCat))}"
+              target="_blank"
+              style="display:inline-flex;align-items:center;gap:8px;background:#25d366;color:#fff;padding:13px 28px;border-radius:9px;font-size:14px;font-weight:700;text-decoration:none;transition:all .2s;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
+              Chat on WhatsApp
+            </a>
+          </div>
+          <div class="bks-powered">Powered by <a href="https://bookinstack.dev" target="_blank">BookInStack</a></div>`;
+
+        container.appendChild(wrap);
+
+        // ── Helper — build pre-filled WhatsApp message ────────────────────────────
+        function buildNegotiateText(cat) {
+            const name  = wrap.querySelector('#bks-neg-name')?.value.trim()  || '';
+            const email = wrap.querySelector('#bks-neg-email')?.value.trim() || '';
+            const lines = [
+                'Hello,',
+                '',
+                `I am interested in making a booking.`,
+            ];
+            if (cat) {
+                lines.push(`📋 *${mode.label} Details*`);
+                lines.push(`Service: ${cat.name}`);
+                lines.push(`Listed Price: ${utils.formatAmount(cat.price)}`);
+                if (cat.description) lines.push(`Details: ${cat.description}`);
+            }
+            if (name)  lines.push(``, `My Name: ${name}`);
+            if (email) lines.push(`My Email: ${email}`);
+            lines.push('', 'Can we discuss availability and pricing?');
+            return lines.join('\n');
+        }
+
+        // ── Update WA link when category or name/email changes ────────────────────
+        let selectedNegCat = firstCat || null;
+        console.log('whatsapp number is ', wa);
+        function refreshWaLink() {
+            const link = wrap.querySelector('#bks-wa-link');
+            if (link) {
+                link.href = `https://wa.me/${wa}?text=${encodeURIComponent(buildNegotiateText(selectedNegCat))}`;
+            }
+        }
+
+        // Category selection
+        wrap.querySelector('#bks-neg-catalog')?.addEventListener('click', (e) => {
+            const card = e.target.closest('[data-neg-trigger]');
+            if (!card) return;
+            wrap.querySelectorAll('[data-neg-trigger]').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            selectedNegCat = catalog.find(c => c.id == card.dataset.id) || selectedNegCat;
+            refreshWaLink();
+        });
+
+        // Name / email input updates WA link live
+        wrap.querySelector('#bks-neg-name')?.addEventListener('input',  refreshWaLink);
+        wrap.querySelector('#bks-neg-email')?.addEventListener('input', refreshWaLink);
+
         return;
       }
 
@@ -472,7 +620,7 @@
           co.min   = co.value;
         }
         const n = utils.nightsBetween(ci.value, co.value);
-        if (badge) badge.textContent = `🌙 ${n} ${_reservationUnit} ${n !== 1 ? 's' : ''}`;
+        if (badge) badge.textContent = `🌙 ${n} night${n !== 1 ? 's' : ''}`;
         refreshPriceDisplay();
       };
 
@@ -481,6 +629,18 @@
         wrap.querySelectorAll('.bks-cat-card').forEach(c => c.classList.remove('selected'));
         el.classList.add('selected');
         selectedCat = catalog.find(c => c.id == el.dataset.id) || selectedCat;
+
+        // Toggle pay vs negotiate based on fixed_price
+        const isFixed     = selectedCat.fixed_price !== false;
+        const hasNegotiate = _enableNegotiate && _whatsappNumber;
+        const submitBtn   = q('#bks-submit');
+        const negoWrap    = q('#bks-negotiate-wrap');
+        if (submitBtn) submitBtn.style.display  = (!isFixed && hasNegotiate) ? 'none' : 'block';
+        if (negoWrap)  negoWrap.style.display   = (!isFixed && hasNegotiate) ? 'block' : 'none';
+
+        // Show/hide custom amount input
+        const customWrap = q('#bks-custom-amount-wrap');
+        if (customWrap) customWrap.style.display = !isFixed ? 'block' : 'none';
 
         // Ticket: show/hide child row based on new category's setting
         if (mode.mode === 'ticket') {
@@ -600,7 +760,38 @@
         <div id="bks-error" class="bks-error" style="display:none;">
           <span>⚠</span><span id="bks-err-msg"></span>
         </div>
+        ${(() => {
+          // Custom amount input — shown when selected category has fixed_price = false
+          const cat = catalog[0];
+          if (cat && cat.fixed_price === false) {
+            const min = cat.min_price ? utils.formatAmount(cat.min_price) : null;
+            const max = cat.max_price ? utils.formatAmount(cat.max_price) : null;
+            const range = [min ? 'Min: ' + min : '', max ? 'Max: ' + max : ''].filter(Boolean).join(' · ');
+            return `<div class="bks-custom-amount">
+              <label>Enter Amount (₦)</label>
+              <input type="number" id="bks-custom-amount-input"
+                     placeholder="Enter agreed amount"
+                     min="${cat.min_price ? cat.min_price/100 : 1}"
+                     ${cat.max_price ? 'max="' + cat.max_price/100 + '"' : ''}
+                     step="0.01" />
+              ${range ? '<div class="bks-price-range">' + range + '</div>' : ''}
+            </div>`;
+          }
+          return '';
+        })()}
         <button class="bks-btn" id="bks-submit">${mode.cta}</button>
+        <div id="bks-negotiate-wrap" style="display:none;">
+          <div style="margin-top:10px;padding:14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:9px;text-align:center;">
+            <div style="font-weight:700;color:#15803d;margin-bottom:4px;font-size:13px;">💬 Interested? Let's talk price</div>
+            <div style="font-size:12px;color:#166534;margin-bottom:10px;line-height:1.5;">Chat with us, agree on a price, and we'll send you a secure payment link.</div>
+            <button type="button" class="bks-negotiate" id="bks-negotiate">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
+              Chat on WhatsApp
+            </button>
+          </div>
+        </div>
         <div class="bks-powered">Powered by <a href="https://bookinstack.dev" target="_blank">BookInStack</a></div>
       `;
 
@@ -635,6 +826,26 @@
         refreshPriceDisplay();
       }
 
+      // ── Negotiate button ──────────────────────────────────────────────────────
+      q('#bks-negotiate')?.addEventListener('click', () => {
+        const cat   = selectedCat;
+        const email = q('#bks-email').value.trim();
+        const name  = q('#bks-name').value.trim();
+
+        const lines = [
+          `Hello, I'm interested in *${cat?.name || mode.desc_label}*.`,
+          cat?.price ? `Listed price: ${utils.formatAmount(cat.price)}` : '',
+          name  ? `My name: ${name}`   : '',
+          email ? `My email: ${email}` : '',
+          '',
+          'Can we discuss the price?',
+        ].filter(Boolean);
+
+        const text = encodeURIComponent(lines.join('\n'));
+        const wa   = _whatsappNumber.replace(/\D/g, '');
+        window.open(`https://wa.me/${wa}?text=${text}`, '_blank');
+      });
+
       // ── Submit ────────────────────────────────────────────────────────────────
       q('#bks-submit').addEventListener('click', async () => {
         showError('');
@@ -650,6 +861,21 @@
           customer_email: email,
           customer_name:  name || undefined,
         };
+
+        // Handle custom amount (when fixed_price = false)
+        if (selectedCat.fixed_price === false) {
+          const customInput = q('#bks-custom-amount-input');
+          const customVal   = customInput ? parseFloat(customInput.value) : 0;
+          if (!customVal || customVal < 1) return showError('Please enter a valid amount.');
+          const customKobo = Math.round(customVal * 100);
+          if (selectedCat.min_price && customKobo < selectedCat.min_price) {
+            return showError(`Minimum amount is ${utils.formatAmount(selectedCat.min_price)}.`);
+          }
+          if (selectedCat.max_price && customKobo > selectedCat.max_price) {
+            return showError(`Maximum amount is ${utils.formatAmount(selectedCat.max_price)}.`);
+          }
+          params.amount = customKobo;
+        }
 
         if (mode.mode === 'ticket') {
           if (adultCount < 1) return showError('Please select at least 1 adult.');
@@ -714,7 +940,8 @@
         _modeConfig     = MODE_DEFAULTS[modeKey] || MODE_DEFAULTS.appointment;
         _catalog        = status.catalog       || [];
         _widgetConfig   = status.widget_config || {};
-        _reservationUnit = status.reservation_unit || 'night';
+        _enableNegotiate = status.enable_negotiate;
+        _whatsappNumber    = status.whatsapp_number || '';
         _bookingOpen    = status.open !== false;
         _bookingReason  = status.reason || null;
         console.info(`[BookInStack] Mode: ${modeKey}, catalog: ${_catalog.length} items, window open: ${_bookingOpen}`);
@@ -723,7 +950,9 @@
         console.warn('[BookInStack] Could not fetch mode config, defaulting to appointment.', err?.message);
         _modeConfig    = MODE_DEFAULTS.appointment;
         _catalog       = [];
-        _widgetConfig    = {};
+        _widgetConfig      = {};
+        _enableNegotiate   = false;
+        _whatsappNumber    = '';
         _reservationUnit = 'night';
         _bookingOpen   = true;
         _bookingReason = null;
@@ -815,6 +1044,8 @@
     get modeConfig()    { return _modeConfig; },
     get catalog()       { return _catalog; },
     get widgetConfig()      { return _widgetConfig; },
+    get enableNegotiate()   { return _enableNegotiate; },
+    get whatsappNumber()    { return _whatsappNumber; },
     get reservationUnit()   { return _reservationUnit; },
     get bookingOpen()   { return _bookingOpen; },
     get bookingReason() { return _bookingReason; },

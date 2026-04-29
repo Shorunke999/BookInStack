@@ -123,4 +123,9 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    // config/app.php
+    'superadmin_email' => env('SUPERADMIN_EMAIL'),
+
+    'company_name' => env('COMPANY_NAME', 'Shorunke Technologies Limited'),
+
 ];

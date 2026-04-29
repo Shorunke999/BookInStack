@@ -1,59 +1,114 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# BookinStack
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+BookinStack is a **booking and payment platform** built with Laravel, designed to handle real-world transactional workflows for service providers and event organizers.
 
-## About Laravel
+It combines flexible booking systems, payment infrastructure, and operational tools into a single scalable backend.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🚀 Core Features
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- 🗓 **Three booking modes**
+  - Appointments (time-based scheduling)
+  - Tickets (event-based access)
+  - Reservations (capacity-based bookings)
 
-## Learning Laravel
+- 💳 **Integrated payments (Paystack)**
+  - Automatic **configurable revenue split**
+  - Secure and consistent transaction handling
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+- 🎟 **QR Code Ticketing**
+  - Unique QR codes per booking
+  - Camera-based **staff check-in system**
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- 💬 **WhatsApp Price Negotiation**
+  - Dynamic pricing conversations
+  - Generate **payment links directly from chat flow**
 
-## Laravel Sponsors
+- 🔗 **Shareable Payment Links**
+  - Sell services outside the platform
+  - Supports off-platform conversions
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+- 📊 **Business Dashboard**
+  - Booking management
+  - Staff accounts & permissions
+  - Attendance tracking
 
-### Premium Partners
+- 🌐 **Embeddable Widget**
+  - Plug into any website with **3 lines of code**
+  - Customizable UI per business
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+- 📧 **Automated Emails**
+  - Branded confirmations
+  - PDF ticket attachments
 
-## Contributing
+- ⚙️ **Per-Business Configuration**
+  - Booking hours
+  - Pricing logic
+  - Widget appearance
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
 
-## Code of Conduct
+## 🧠 System Design Focus
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+This project was built with a strong emphasis on:
 
-## Security Vulnerabilities
+- Clean and maintainable architecture
+- Reliable **transactional workflows**
+- Scalable data modeling
+- API-first design
+- Separation of concerns across services
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
 
-## License
+## 🏗 Tech Stack
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- **Backend:** Laravel (PHP)
+- **Database:** MySQL
+- **Frontend:** Blade 
+- **Payments:** Paystack API
+- **Queue System:** Laravel Queues (for async jobs)
+- **Other:** REST APIs, third-party integrations
+
+---
+
+## 🔌 Key Backend Concepts Implemented
+
+- RESTful API architecture
+- Background job processing (queues)
+- Payment lifecycle handling (initiation → verification → settlement)
+- Role-based access control (RBAC)
+- Event-driven flows (bookings, payments, notifications)
+- External API integrations
+
+---
+
+## 🗄 Database
+
+- Structured relational schema with focus on:
+  - bookings
+  - users & roles
+  - transactions
+  - services/events
+- Includes **migrations and seeders** for:
+  - rapid environment setup
+  - consistent test data
+  - reproducible development workflows
+
+---
+
+## ⚙️ Installation
+
+```bash
+git clone https://github.com/Shorunke999/BookInStack.git
+cd bookstack
+
+composer install
+cp .env.example .env
+php artisan key:generate
+
+# Configure your database in .env
+
+php artisan migrate --seed
+
+php artisan serve

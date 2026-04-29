@@ -20,8 +20,7 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
         'role',
         'owner_id',
 
-        'nin',
-        'nin_verified',
+        'bvn_verified',
 
         'enable_booking_window',
         'booking_window',
@@ -42,24 +41,30 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
 
         'email_verified_at',
          'widget_config',
-         'reservation_unit'
+         'reservation_unit',
+         'enable_negotiate',
+            'whatsapp_number',
+            'platform_fee_percent',
+            'booking_expires_at',
+            'allowed_domains'
 
     ];
 
     protected $hidden = [
         'password',
         'secret_key',
-        'remember_token',
-        'nin',
+        'remember_token'
     ];
 
     protected $casts = [
-        'nin_verified' => 'boolean',
+        'bvn_verified' => 'boolean',
         'password' => 'hashed',
         'enable_booking_window' => 'boolean',
         'booking_window' => 'array',
         'email_verified_at' => 'datetime',
-         'widget_config'=> 'array'
+         'widget_config'=> 'array',
+         'platform_fee_percent' => 'decimal:2',
+         'allowed_domains' => 'array',
     ];
 
     // ─── Relationships ──────────────────────────────────────────────────────────
@@ -100,7 +105,7 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
 
     public function isActive(): bool
     {
-        return $this->status === 'active' && $this->nin_verified;
+        return $this->status === 'active' && $this->bvn_verified;
     }
 
     public function totalRevenue(): float
@@ -151,6 +156,14 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
     {
         return $this->role === 'staff';
     }
+     public function effectiveDeveloper(): Developer
+    {
+        return $this->isStaff() ? $this->owner : $this;
+    }
+    public function isSuperAdmin(): bool
+{
+    return $this->email === config('app.superadmin_email');
+}
        public function getEmailForPasswordReset(): string
     {
         return $this->email;
@@ -164,7 +177,17 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
             : $this->paystack_subaccount_code;
     }
 
+    // Helper method — add to model:
+    public function platformFeeKobo(int $amountKobo): int
+    {
+        $percent = $this->platform_fee_percent ?? 5.00;
+        return (int) round($amountKobo * ($percent / 100));
+    }
 
+    public function developerShareKobo(int $amountKobo): int
+    {
+        return $amountKobo - $this->platformFeeKobo($amountKobo);
+    }
     /**
      * Full config for the current booking mode.
      * Used by the API status endpoint and dashboard views.

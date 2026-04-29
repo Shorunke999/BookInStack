@@ -28,8 +28,14 @@ class DashboardController extends Controller
         {
             return redirect()->route('login');
         }
-
         $developer = $this->effectiveDeveloper($request);
+
+        //redirect super admin
+        if($developer->isSuperAdmin())
+        {
+            return redirect()->route('superadmin.dashboard');
+        }
+        
         $bookin_mode = $developer->booking_mode;
         $stats = [
 
@@ -84,6 +90,17 @@ class DashboardController extends Controller
                         ->get();
         return view('dashboard.bookings', compact('bookings', 'developer', 'modeConfig', 'categories'));
     }
+    public function showBooking(Request $request, string $reference): View
+    {
+        $developer = $this->effectiveDeveloper($request);
+
+        $booking = \App\Models\Booking::where('reference', $reference)
+            ->where('developer_id', $developer->id)
+            ->with(['category', 'bookedBy', 'attendedBy'])
+            ->firstOrFail();
+
+        return view('dashboard.booking-show', compact('booking', 'developer'));
+    }
 
     // ─── Payments ─────────────────────────────────────────────────────────────────
     public function payments(Request $request): View
@@ -115,14 +132,13 @@ class DashboardController extends Controller
         }
     }
 
-
     // ─── API Keys ─────────────────────────────────────────────────────────────────
     public function apiKeys(Request $request): View
     {
         $developer = $request->user();
         $banks     = [];
 
-        if (! $developer->nin_verified) {
+        if (! $developer->bvn_verified) {
             try {
                 $banks = $this->paystack->listBanks();
             } catch (\Exception $e) {
@@ -140,8 +156,8 @@ class DashboardController extends Controller
     {
         $developer = $request->user();
 
-        if (! $developer->nin_verified) {
-            return back()->with('error', 'NIN verification required before managing keys.');
+        if (! $developer->bvn_verified) {
+            return back()->with('error', 'BVN verification required before managing keys.');
         }
 
         $newKey = 'pk_live_' . \Illuminate\Support\Str::random(40);
@@ -167,7 +183,7 @@ class DashboardController extends Controller
     // ─── Booking Window Settings ─────────────────────────────────────────────────
     public function bookingSettings(Request $request): View
     {
-         $developer  = $this->effectiveDeveloper($request);
+        $developer  = $this->effectiveDeveloper($request);
         $modeConfig = $developer->modeConfig();
         $categories = $developer->bookingCategories()
                         ->forMode($developer->booking_mode)
@@ -177,35 +193,39 @@ class DashboardController extends Controller
         return view('dashboard.booking-settings', compact('developer', 'modeConfig', 'categories'));
     }
 
-
     public function saveBookingSettings(Request $request): RedirectResponse
     {
         $developer = $this->effectiveDeveloper($request);
-
+ 
         $request->validate([
-            'booking_mode' => 'required|in:appointment,ticket,reservation',
+            'booking_mode'          => 'required|in:appointment,ticket,reservation',
+            'reservation_unit'      => 'nullable|in:night,day',
+            'enable_negotiate'      => 'boolean',
+            'whatsapp_number'       => 'nullable|string|max:20',
             'enable_booking_window' => 'boolean',
-             'reservation_unit'      => 'nullable|in:night,day',
             'window_days'           => 'nullable|array',
             'window_days.*'         => 'in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
             'open_time'             => 'nullable|date_format:H:i',
             'close_time'            => 'nullable|date_format:H:i|after:open_time',
         ]);
+ 
         $developer->update([
-            'booking_mode' => $request->booking_mode,
+            'booking_mode'          => $request->booking_mode,
             'reservation_unit'      => $request->input('reservation_unit', 'night'),
+            'enable_negotiate'      => $request->boolean('enable_negotiate'),
+            'whatsapp_number'       => $request->input('whatsapp_number'),
             'enable_booking_window' => $request->boolean('enable_booking_window'),
-            'booking_window' => [
+            'booking_window'        => [
                 'days'       => $request->input('window_days', []),
                 'open_time'  => $request->input('open_time',  '09:00'),
                 'close_time' => $request->input('close_time', '17:00'),
             ],
         ]);
-
-
-        return back()->with('success', 'Booking Settings saved.');
+ 
+        return back()->with('success', 'Booking settings saved.');
     }
-
+    
+    // ─── Widget Appearance ────────────────────────────────────────────────────────
     
     // ─── Widget Appearance ────────────────────────────────────────────────────────
  
@@ -214,19 +234,39 @@ class DashboardController extends Controller
         $developer = $this->effectiveDeveloper($request);
  
         $request->validate([
-            'bg_type'       => 'required|in:none,color,image',
-            'bg_color'      => 'nullable|string|max:20',
-            'bg_image_url'  => 'nullable|url|max:500',
-            'accent_color'  => 'nullable|string|max:20',
-            'border_radius' => 'nullable|integer|min:0|max:28',
-            'show_branding' => 'boolean',
+            'bg_type'        => 'required|in:none,color,image',
+            'bg_color'       => 'nullable|string|max:20',
+            'bg_image_url'   => 'nullable|string|max:500',
+            'bg_image_file'  => 'nullable|image|mimes:jpeg,png,webp|max:2048',
+            'accent_color'   => 'nullable|string|max:20',
+            'border_radius'  => 'nullable|integer|min:0|max:28',
+            'show_branding'  => 'boolean',
         ]);
+ 
+        // ── Handle image upload ────────────────────────────────────────────────
+        $bgImageUrl = $request->input('bg_image_url', '');
+ 
+        if ($request->hasFile('bg_image_file') && $request->file('bg_image_file')->isValid()) {
+            // Delete old image if it was a stored file
+            $oldConfig = $developer->widget_config ?? [];
+            if (!empty($oldConfig['bg_image_path'])) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($oldConfig['bg_image_path']);
+            }
+ 
+            // Store new image in public/widget-backgrounds/
+            $path = $request->file('bg_image_file')->store(
+                'widget-backgrounds',
+                'public'
+            );
+            $bgImageUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+        }
  
         $developer->update([
             'widget_config' => [
                 'bg_type'       => $request->input('bg_type', 'none'),
-                'bg_color'      => $request->input('bg_color',     '#f5f3ff'),
-                'bg_image_url'  => $request->input('bg_image_url', ''),
+                'bg_color'      => $request->input('bg_color',    '#f5f3ff'),
+                'bg_image_url'  => $bgImageUrl,
+                'bg_image_path' => isset($path) ? $path : ($developer->widget_config['bg_image_path'] ?? ''),
                 'accent_color'  => $request->input('accent_color', '#4f46e5'),
                 'border_radius' => (int) $request->input('border_radius', 14),
                 'show_branding' => $request->boolean('show_branding'),
@@ -235,13 +275,13 @@ class DashboardController extends Controller
  
         return back()->with('success', 'Widget appearance saved.');
     }
-    // ─── Staff ───────────────────────────────────────────────────────────────────
 
+    // ─── Staff ───────────────────────────────────────────────────────────────────
     public function staff(Request $request): View
     {
         $developer   = $this->effectiveDeveloper($request);
         $staffList   = $developer->staff()->latest()->get();
 
         return view('dashboard.staff.index', compact('developer', 'staffList'));
-}
+    }
 }

@@ -129,10 +129,8 @@ class WebhookController extends Controller
     private function sendConfirmationEmail(Booking $booking): void
     {
         try {
-            defer(fn() => Mail::to($booking->customer_email)
-                ->send(new BookingConfirmed($booking, $booking->developer)));
-
-            Log::info("Confirmation email sent for {$booking->reference} to {$booking->customer_email}");
+            Mail::to($booking->customer_email)
+                ->send(new BookingConfirmed($booking, $booking->developer));
 
         } catch (\Exception $e) {
             // Never let email failure break the webhook response

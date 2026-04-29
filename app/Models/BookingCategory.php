@@ -9,25 +9,30 @@ class BookingCategory extends Model
 {
 
     protected $fillable = [
-        'developer_id',
-        'booking_mode',
-        'name',
-        'description',
-        'price',
-        'child_price',
-        'duration_minutes',
-        'capacity',
-        'enable_child_pricing',
-        'max_per_order',
-        'sort_order',
-        'status',
-        'total_slots'
+         'developer_id', 'booking_mode', 'name', 'description',
+        'price', 'fixed_price', 'min_price', 'max_price',
+        'child_price', 'duration_minutes', 'capacity',
+        'enable_child_pricing', 'max_per_order', 'total_slots',
+        'sort_order', 'status',
+
+          // Check-in window
+        'checkin_start_date', 'checkin_end_date',
+        'checkin_start_time', 'checkin_end_time',
+        'checkin_days_before', 'checkin_days_after',
     ];
 
     protected $casts = [
         'enable_child_pricing' => 'boolean',
+        'fixed_price'          => 'boolean',
         'price'                => 'integer',
         'child_price'          => 'integer',
+        'min_price'            => 'integer',
+        'max_price'            => 'integer',
+
+         'checkin_start_date'   => 'date',
+    'checkin_end_date'     => 'date',
+    'checkin_days_before'  => 'integer',
+    'checkin_days_after'   => 'integer',
     ];
 
     // ── Relationships ──────────────────────────────────────────────────────────
@@ -82,13 +87,17 @@ class BookingCategory extends Model
      */
     public function toApiArray(string $mode): array
     {
+        
         $base = [
-            'id'          => $this->id,
-            'name'        => $this->name,
-            'description' => $this->description,
-            'price'       => $this->price,
+            'id'              => $this->id,
+            'name'            => $this->name,
+            'description'     => $this->description,
+            'price'           => $this->price,
+            'fixed_price'     => $this->fixed_price ?? true,
+            'min_price'       => $this->min_price,
+            'max_price'       => $this->max_price,
+            'slots_remaining' => $this->slotsRemaining(),
         ];
-
         if ($mode === 'ticket') {
             $base['enable_child_pricing'] = $this->enable_child_pricing;
             $base['child_price']          = $this->child_price;

@@ -6,6 +6,7 @@ use App\Models\Booking;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
@@ -46,7 +47,7 @@ class BookingController extends Controller
         }
 
         $data = $request->validate($rules);
-        Log::info('Creating booking with data: ', $request->all());
+
         // ── Resolve category → amount + description ────────────────────────────
         $category    = null;
         $amount      = $data['amount'] ?? null;
@@ -56,6 +57,7 @@ class BookingController extends Controller
             $category = \App\Models\BookingCategory::where('id', $data['category_id'])
                 ->where('developer_id', $developer->id)
                 ->where('booking_mode', $mode)
+                ->where('status', 'active')
                 ->first();
 
             if (!$category) {
@@ -65,9 +67,9 @@ class BookingController extends Controller
             $description = $description ?? $category->name;
 
             $amount = match ($mode) {
-                'ticket' => $this->ticketAmount($category, $data),
+                'ticket'      => $this->ticketAmount($category, $data),
                 'reservation' => $this->reservationAmount($category, $data),
-                default => $category->price,
+                default       => $category->price,
             };
         }
 
@@ -77,35 +79,15 @@ class BookingController extends Controller
         if (!$description) {
             return response()->json(['message' => 'description is required when no category is set.'], 422);
         }
-        if ($mode === 'reservation' && $category) {
-            $requested_in  = \Carbon\Carbon::parse($data['check_in']);
-            $requested_out = \Carbon\Carbon::parse($data['check_out']);
 
-            // Count paid/pending bookings for this category that overlap the requested dates
-            $overlapping = \App\Models\Booking::where('category_id', $category->id)
-                ->whereIn('status', ['paid'])
-                ->where(function ($q) use ($requested_in, $requested_out) {
-                    // Overlap condition: existing booking starts before new end AND ends after new start
-                    $q->where('check_in',  '<', $requested_out)
-                    ->where('check_out', '>', $requested_in);
-                })
-                ->count();
-            if ($category->total_slots !== null && $overlapping >= $category->total_slots) {
-                return response()->json([
-                    'message' => "Sorry, {$category->name} is fully booked for your selected dates. Please choose different dates or another option.",
-                    'error'   => 'DATES_UNAVAILABLE',
-                ], 422);
-            }
-        }
-
-        // ── Create booking ─────────────────────────────────────────────────────
+        // ── Build base payload ─────────────────────────────────────────────────
         $payload = [
             'developer_id'   => $developer->id,
             'category_id'    => $category?->id,
             'reference'      => 'BKG-' . strtoupper(\Illuminate\Support\Str::random(12)),
             'amount'         => $amount,
             'description'    => $description,
-            'booking_mode' => $mode,
+            'booking_mode'   => $mode,
             'customer_email' => $data['customer_email'],
             'customer_name'  => $data['customer_name']  ?? null,
             'customer_phone' => $data['customer_phone'] ?? null,
@@ -113,18 +95,121 @@ class BookingController extends Controller
             'metadata'       => $data['metadata'] ?? null,
             'adults'         => $data['adults']   ?? 1,
             'children'       => $data['children'] ?? 0,
+            'booked_via'   => 'widget',        // always widget for SDK bookings
+            'booked_by_id' => null
         ];
 
         if ($mode === 'reservation') {
             $payload['check_in']  = $data['check_in'];
             $payload['check_out'] = $data['check_out'];
-            $payload['amount'] = $this->reservationAmount($category, $data);
+            $payload['amount']    = $this->reservationAmount($category, $data);
         }
         if ($mode === 'appointment') {
             $payload['preferred_date'] = $data['preferred_date'] ?? null;
             $payload['preferred_time'] = $data['preferred_time'] ?? null;
         }
-        $booking = Booking::create($payload);
+
+        // ── Create booking with appropriate locking per mode ───────────────────
+        try {
+            $booking = match ($mode) {
+
+                // ── TICKET: atomic slot check + 15-min hold ────────────────────
+                'ticket' => DB::transaction(function () use ($category, $payload) {
+                    if (!$category) {
+                        // No category — no slot limit, just create
+                        return Booking::create($payload);
+                    }
+
+                    // Lock this category row — serialises concurrent requests
+                    $cat = \App\Models\BookingCategory::lockForUpdate()->find($category->id);
+                    $hasCurrentBooking = Booking::where('category_id', $cat->id)
+                                            ->where('customer_email',$payload['customer_email'])
+                                            ->first();
+                    if($hasCurrentBooking)
+                    {
+                        if($hasCurrentBooking->status = 'paid')
+                        {
+                             throw new \Exception('TICKET SOLD TO THIS CUSTOMER EMAIL ALREADY!');
+                        }
+                        return $hasCurrentBooking;
+                    }
+                    if ($cat->total_slots !== null) {
+                        // Count paid + non-expired pending only
+                        $sold = Booking::where('category_id', $cat->id)
+                            ->where(function ($q) {
+                                $q->where('status', 'paid')
+                                ->orWhere(function ($q2) {
+                                    $q2->where('status', 'pending')
+                                        ->where(function ($q3) {
+                                            $q3->whereNull('booking_expires_at')
+                                                ->orWhere('booking_expires_at', '>', now());
+                                        });
+                                });
+                            })
+                            ->count();
+
+                        if ($sold >= $cat->total_slots) {
+                            throw new \Exception('SOLD_OUT');
+                        }
+                    }
+
+                    // Set 15-minute seat hold — expires if not paid
+                    $payload['booking_expires_at'] = now()->addMinutes(15);
+
+                    return Booking::create($payload);
+                }),
+
+                // ── RESERVATION: date-range overlap check ──────────────────────
+                'reservation' => DB::transaction(function () use ($category, $payload, $data) {
+                    if ($category) {
+                        $requestedIn  = \Carbon\Carbon::parse($data['check_in']);
+                        $requestedOut = \Carbon\Carbon::parse($data['check_out']);
+
+                        // Lock category row
+                        \App\Models\BookingCategory::lockForUpdate()->find($category->id);
+
+                        $overlapping = Booking::where('category_id', $category->id)
+                            ->where('status', 'paid')
+                            ->where('check_in',  '<', $requestedOut)
+                            ->where('check_out', '>', $requestedIn)
+                            ->count();
+
+                        if ($category->total_slots !== null && $overlapping >= $category->total_slots) {
+                            throw new \Exception(
+                                "Sorry, {$category->name} is fully booked for your selected dates.|DATES_UNAVAILABLE"
+                            );
+                        }
+                    }
+
+                    return Booking::create($payload);
+                }),
+
+                // ── APPOINTMENT + default: simple create ──────────────────────
+                default => Booking::create($payload),
+            };
+
+        } catch (\Exception $e) {
+            $parts   = explode('|', $e->getMessage(), 2);
+            $message = $parts[0];
+            $error   = $parts[1] ?? 'BOOKING_FAILED';
+
+            $status = match ($error) {
+                'SOLD_OUT'          => 422,
+                'DATES_UNAVAILABLE' => 422,
+                default             => 500,
+            };
+
+            $response = ['message' => $message === 'SOLD_OUT'
+                ? 'Sorry, this ticket type is sold out.'
+                : $message
+            ];
+
+            if (isset($parts[1])) {
+                $response['error'] = $error;
+            }
+
+            return response()->json($response, $status);
+        }
 
         return response()->json([
             'booking' => $this->formatBooking($booking->load('category'), $mode),
@@ -231,11 +316,12 @@ class BookingController extends Controller
             ->get()
             ->map(fn($cat) => $cat->toApiArray($mode))
             ->values();
-
         return response()->json([
             'open'         => $open,
             'reason'       => $reason,
             'booking_mode' => $mode,
+            'enable_negotiate' => $developer->enable_negotiate ?? false,
+            'whatsapp_number'  => $developer->whatsapp_number ?? '',
             'catalog'      => $catalog,
             'widget_config'    => $developer->widget_config ?? (object)[],
             'reservation_unit' => $developer->reservation_unit ?? null
@@ -262,6 +348,7 @@ class BookingController extends Controller
         $booking->update([
             'attended' => $data['attended'],
             'attended_at' => $data['attended'] ? now() : null,
+            'attended_by_id'  => auth()->id(),
             'attendance_note' => $data['note'] ?? null,
         ]);
 
@@ -275,27 +362,112 @@ class BookingController extends Controller
      * Dashboard version — Sanctum auth
      * POST /dashboard/bookings/{reference}/attend
      */
-    public function dashboardMarkAttended(Request $request, string $reference): RedirectResponse
+    public function dashboardMarkAttended(Request $request, string $reference)
     {
-        $developer = $request->user();
+        $developer = $request->user()->effectiveDeveloper();
 
         $booking = Booking::where('reference', $reference)
             ->where('developer_id', $developer->id)
             ->where('status', 'paid')
+            ->with('category')
             ->firstOrFail();
 
         $data = $request->validate([
             'attended' => 'required|boolean',
-            'note' => 'nullable|string|max:500',
+            'note'     => 'nullable|string|max:500',
         ]);
 
-        $booking->update([
-            'attended' => $data['attended'],
-            'attended_at' => $data['attended'] ? now() : null,
-            'attendance_note' => $data['note'] ?? null,
-        ]);
+        // ── Check-in window enforcement ───────────────────────────────────────
+        if ($data['attended'] && $booking->category) {
+            $cat = $booking->category;
+            $now = now();
 
-        return back()->with('success', 'Attendance updated.');
+            // Date window — fixed dates on category
+            if ($cat->checkin_start_date && $now->toDateString() < $cat->checkin_start_date) {
+                $msg = 'Check-in not open yet. Opens ' . \Carbon\Carbon::parse($cat->checkin_start_date)->format('d M Y');
+                return $request->wantsJson()
+                    ? response()->json(['message' => $msg], 422)
+                    : back()->withErrors(['attended' => $msg]);
+            }
+
+            if ($cat->checkin_end_date && $now->toDateString() > $cat->checkin_end_date) {
+                $msg = 'Check-in window has closed.';
+                return $request->wantsJson()
+                    ? response()->json(['message' => $msg], 422)
+                    : back()->withErrors(['attended' => $msg]);
+            }
+
+            // Time window
+            if ($cat->checkin_start_time && $now->format('H:i:s') < $cat->checkin_start_time) {
+                $msg = 'Check-in opens at ' . \Carbon\Carbon::parse($cat->checkin_start_time)->format('g:i A');
+                return $request->wantsJson()
+                    ? response()->json(['message' => $msg], 422)
+                    : back()->withErrors(['attended' => $msg]);
+            }
+
+            if ($cat->checkin_end_time && $now->format('H:i:s') > $cat->checkin_end_time) {
+                $msg = 'Check-in closed at ' . \Carbon\Carbon::parse($cat->checkin_end_time)->format('g:i A');
+                return $request->wantsJson()
+                    ? response()->json(['message' => $msg], 422)
+                    : back()->withErrors(['attended' => $msg]);
+            }
+
+            // For reservation — only allow check-in on or after check_in date
+            if ($booking->check_in) {
+                $earliest = \Carbon\Carbon::parse($booking->check_in)
+                    ->subDays($cat->checkin_days_before ?? 0);
+                $latest   = \Carbon\Carbon::parse($booking->check_out ?? $booking->check_in)
+                    ->addDays($cat->checkin_days_after ?? 0);
+
+                if ($now->lt($earliest)) {
+                    $msg = 'Too early to check in. Earliest: ' . $earliest->format('d M Y');
+                    return $request->wantsJson()
+                        ? response()->json(['message' => $msg], 422)
+                        : back()->withErrors(['attended' => $msg]);
+                }
+
+                if ($now->gt($latest)) {
+                    $msg = 'Check-in window has passed.';
+                    return $request->wantsJson()
+                        ? response()->json(['message' => $msg], 422)
+                        : back()->withErrors(['attended' => $msg]);
+                }
+            }
+
+            // For appointment — only allow on the preferred_date ± days_before/after
+            if ($booking->preferred_date) {
+                $earliest = \Carbon\Carbon::parse($booking->preferred_date)
+                    ->subDays($cat->checkin_days_before ?? 0)->startOfDay();
+                $latest   = \Carbon\Carbon::parse($booking->preferred_date)
+                    ->addDays($cat->checkin_days_after ?? 0)->endOfDay();
+
+                if ($now->lt($earliest)) {
+                    $msg = 'Too early to mark attendance. Appointment is on ' . \Carbon\Carbon::parse($booking->preferred_date)->format('d M Y');
+                    return $request->wantsJson()
+                        ? response()->json(['message' => $msg], 422)
+                        : back()->withErrors(['attended' => $msg]);
+                }
+                if ($now->gt($latest)) {
+                    $msg = 'Attendance window has passed for this appointment.';
+                    return $request->wantsJson()
+                        ? response()->json(['message' => $msg], 422)
+                        : back()->withErrors(['attended' => $msg]);
+                }
+            }
+        }
+
+        // ── Mark attended ─────────────────────────────────────────────────────
+        if (!$booking->attended) {
+            $booking->update([
+                'attended'        => $data['attended'],
+                'attended_at'     => $data['attended'] ? now() : null,
+                'attendance_note' => $data['note'] ?? null,
+            ]);
+        }
+
+        return $request->wantsJson()
+            ? response()->json(['message' => 'Attendance updated.'], 200)
+            : back()->with('success', 'Attendance updated.');
     }
 
     /**
