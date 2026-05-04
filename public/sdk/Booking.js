@@ -184,7 +184,7 @@
         .bks-widget {
           --bks-accent: #4f46e5;
           font-family: 'DM Sans','Segoe UI',system-ui,sans-serif;
-          max-width: 420px;
+          max-width: 100%;
           border: 1px solid #e5e7eb; border-radius: 14px;
           padding: 26px;
           box-shadow: 0 1px 4px rgba(0,0,0,.06), 0 6px 24px rgba(0,0,0,.05);
@@ -367,6 +367,7 @@
           padding-top:10px; margin-top:4px;
         }
         .bks-total { font-size:18px; font-weight:800; color:#111827; letter-spacing:-.03em; }
+
       `;
       document.head.appendChild(style);
     },
