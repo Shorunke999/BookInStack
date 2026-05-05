@@ -21,7 +21,7 @@ class PaystackService
     }
 
       // ─── BVN Verification ─────────────────────────────────────────────────────────
- 
+
     /**
      * Verify BVN matches a bank account via Paystack BVN Match API.
      *
@@ -38,19 +38,19 @@ class PaystackService
                 'bank_code'      => $bankCode,
                 'account_number' => $accountNumber,
             ]);
- 
+
             $data = $response->json('data');
- 
+
             $verified = isset($data['account_number'])
                 && $data['account_number'] === true
                 && ($data['is_blacklisted'] ?? false) === false;
- 
+
             return [
                 'verified'   => $verified,
                 'first_name' => $data['first_name'] ?? null,
                 'last_name'  => $data['last_name']  ?? null,
             ];
- 
+
         } catch (\Exception $e) {
             Log::error('BVN verification API error', ['error' => $e->getMessage()]);
             throw new \Exception('BVN verification failed: ' . $e->getMessage());
@@ -96,6 +96,7 @@ class PaystackService
             'email' => $data['customer_email'],
             'amount' => (int) $data['amount'], // must be in kobo
             'reference' => $data['reference'],
+            'bearer' => 'account',
             'callback_url' => $data['callback_url'] ?? config('app.url').'/payments/callback',
             'metadata' => [
                 'booking_id' => $data['booking_id'],
@@ -116,10 +117,8 @@ class PaystackService
         ];
 
         // Attach subaccount for split payment
-        if (! empty($data['subaccount_code'])) {
+        if (!empty($data['subaccount_code'])) {
             $payload['subaccount'] = $data['subaccount_code'];
-            $payload['bearer'] = 'account'; // subaccount bears Paystack fees
-            // percentage_charge on the subaccount definition handles the split automatically
         }
 
         $response = $this->http->post('/transaction/initialize', $payload);
@@ -132,10 +131,10 @@ class PaystackService
         $response = $this->http->put("/subaccount/{$subaccountCode}", [
             'percentage_charge' => intval($feePercent),
         ]);
- 
+
         return $response->json('data');
     }
- 
+
     /**
      * Verify a transaction by reference.
      */
@@ -196,13 +195,14 @@ class PaystackService
      * @param  int  $amountKobo  Amount in kobo
      * @return array{platform_fee: int, developer_amount: int, paystack_fee: int}
      */
-    public function calculateSplit(int $amountKobo): array
+    public function calculateSplit(int $amountKobo,$developer): array
     {
         // Paystack fee: 1.5% + ₦100 for local, capped at ₦2000
         // Simplified estimate:
         $paystackFeeKobo = (int) min(($amountKobo * 0.015) + 10000, 200000);
 
-        $platformFee = (int) ($amountKobo * self::SPLIT_RATIO);
+        $platformFee = (int) round(($developer->platform_fee_percent / 100) * $amountKobo);
+
         $developerAmount = $amountKobo - $platformFee;
 
         return [

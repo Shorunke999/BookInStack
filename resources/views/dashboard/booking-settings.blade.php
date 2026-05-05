@@ -7,7 +7,7 @@
 
 {{-- ── Tab nav ─────────────────────────────────────────────────────────────── --}}
 <div style="display:flex;gap:2px;margin-bottom:24px;border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;">
-    @foreach([['mode','🗓','Mode'],['window','🕐','Hours'],['negotiate','💬','Negotiate'],['categories','📦','Categories'],['appearance','🎨','Widget'],['domains','🌐','Domains']] as [$id,$icon,$label])
+    @foreach([['mode','🗓','Mode'],['window','🕐','Hours'],['negotiate','💬','Negotiate'],['categories','📦','Categories'],['appearance','🎨','Widget'],['domains','🌐','Domains'], ['sms','📱','SMS'],] as [$id,$icon,$label])
         <button onclick="switchTab('{{ $id }}')" id="tab-{{ $id }}" style="
             padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;
             border:none;background:none;margin-bottom:-1px;transition:all .15s;
@@ -382,9 +382,100 @@
     </div>
 </div>
 
+{{-- ══ TAB 7 — SMS NOTIFICATION NUMBER ══════════════════════════════════════ --}}
+<div id="panel-sms" style="display:none;max-width:520px;">
+    <div class="card">
+        <h3 style="margin-bottom:4px;">📱 SMS Credit Alerts</h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.5;">
+            Set the mobile number that receives credit alert SMS notifications
+            when a booking payment is confirmed.
+        </p>
+
+        @if(! $developer->bvn_verified)
+            {{-- ── BVN gate ─────────────────────────────────────────── --}}
+            <div style="
+                display:flex;flex-direction:column;align-items:center;
+                gap:12px;padding:28px 20px;text-align:center;
+                background:var(--soft);border-radius:10px;
+                border:1px dashed var(--border);
+            ">
+                <span style="font-size:32px;">🔒</span>
+                <p style="font-size:14px;font-weight:600;margin:0;">BVN Verification Required</p>
+                <p style="font-size:13px;color:var(--muted);margin:0;line-height:1.5;">
+                    You need to verify your BVN before you can set an SMS
+                    notification number.
+                </p>
+                <a href="{{ route('dashboard.bvn') }}" class="btn btn-primary btn-sm">
+                    Verify BVN →
+                </a>
+            </div>
+
+        @else
+
+            {{-- ── Current number badge ───────────────────────────── --}}
+            @if($developer->sms_number)
+                <div style="
+                    display:flex;align-items:center;gap:10px;
+                    padding:10px 14px;background:var(--soft);
+                    border-radius:8px;margin-bottom:16px;
+                    border:1px solid var(--border);
+                ">
+                    <span style="font-size:18px;">📲</span>
+                    <div>
+                        <div style="font-size:11px;color:var(--muted);">Current SMS number</div>
+                        <div style="font-size:14px;font-weight:600;">{{ $developer->sms_number }}</div>
+                    </div>
+                </div>
+            @endif
+
+            {{-- ── Form ───────────────────────────────────────────── --}}
+            <form method="POST" action="{{ route('dashboard.sms.update') }}">
+                @csrf
+
+                <div style="margin-bottom:16px;">
+                    <label style="
+                        display:block;font-size:13px;
+                        font-weight:600;margin-bottom:6px;
+                    ">
+                        Mobile Number
+                    </label>
+
+                    <input
+                        type="tel"
+                        name="sms_number"
+                        class="form-control @error('sms_number') is-invalid @enderror"
+                        placeholder="e.g. 08012345678"
+                        value="{{ old('sms_number', $developer->sms_number) }}"
+                        maxlength="14"
+                        style="max-width:100%;"
+                    />
+
+                    @error('sms_number')
+                        <div style="font-size:12px;color:#ef4444;margin-top:4px;">
+                            {{ $message }}
+                        </div>
+                    @enderror
+
+                    <p style="font-size:12px;color:var(--muted);margin-top:6px;">
+                        Accepts formats: <code>08012345678</code> or <code>2348012345678</code>
+                    </p>
+                </div>
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                    style="width:100%;"
+                >
+                    💾 Save SMS Number
+                </button>
+            </form>
+        @endif
+    </div>
+</div>
+
 @push('scripts')
 <script>
-const TABS = ['mode','window','negotiate','categories','appearance','domains'];
+const TABS = ['mode','window','negotiate','categories','appearance','domains','sms'];
 
 function switchTab(id) {
     TABS.forEach(t => {

@@ -37,5 +37,10 @@ return [
     'paystack' => [
         'secret_key' => env('SECRET_PAYSTACK_API_KEY', 'sk_live_d4f8e8d0a4fb04040f4bb7c4ea7cefa389d1c70b'),
     ],
+    'ebulksms' => [
+        'username' => env('EBULKSMS_USERNAME', 'mybusiness'),
+        'apikey'   => env('EBULKSMS_APIKEY', 'myapikeys'),
+        'sender'   => env('EBULKSMS_SENDER', 'BookinStack'),
+    ],
 
 ];

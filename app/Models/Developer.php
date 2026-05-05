@@ -44,6 +44,7 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
          'reservation_unit',
          'enable_negotiate',
             'whatsapp_number',
+            'sms_number',
             'platform_fee_percent',
             'booking_expires_at',
             'allowed_domains'

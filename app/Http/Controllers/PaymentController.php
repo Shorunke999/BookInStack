@@ -35,6 +35,7 @@ class PaymentController extends Controller
             ->firstOrFail();
 
         try {
+            $split = $this->paystack->calculateSplit((int) $booking->amount * 100, $developer);
             $transaction = $this->paystack->initializeTransaction([
                 'customer_email' => $booking->customer_email,
                 'amount' => (int) $booking->amount * 100,
@@ -44,8 +45,7 @@ class PaymentController extends Controller
                 'booking_reference' => $booking->reference,
                 'description' => $booking->description,
                 'subaccount_code' => $developer->paystack_subaccount_code,
-                'transaction_charge' => $developer->platformFeeKobo($booking->amount),
-                'bearer'             => 'subaccount',
+                'transaction_charge' => max($split['platform_fee'],$split['paystack_fee']), // ensure we cover Paystack fee
                 'callback_url' => $data['callback_url'] ?? null,
             ]);
 
@@ -125,7 +125,7 @@ class PaymentController extends Controller
     public function recordSuccessfulPayment(Booking $booking, array $txData): void
     {
         DB::transaction(function () use ($booking, $txData) {
-            $split = $this->paystack->calculateSplit((int) $txData['amount']);
+            $split = $this->paystack->calculateSplit((int) $txData['amount'],$booking->developer);
 
             // Create payment record
             Payment::create([

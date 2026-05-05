@@ -104,6 +104,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/booking-settings', [DashboardController::class, 'bookingSettings'])->name('dashboard.booking-settings');
         Route::post('/booking-settings/save', [DashboardController::class, 'saveBookingSettings'])->name('dashboard.booking-settings.save');
         Route::post('/widget-apperance/save',[DashboardController::class, 'saveWidgetAppearance'])->name('dashboard.widget-appearance.save');
+        Route::post('/dashboard/sms-number', [DashboardController::class, 'updateSmsNumber'])
+        ->name('dashboard.sms.update');
         Route::post('/api-keys/regenerate', [DashboardController::class, 'regenerateKey'])->name('api-keys.regenerate');
         Route::post('/bvn/verify', [\App\Http\Controllers\Dashboard\VerificationController::class, 'verify'])
             ->name('bvn.verify');

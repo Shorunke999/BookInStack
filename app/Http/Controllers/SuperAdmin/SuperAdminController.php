@@ -90,7 +90,7 @@ class SuperAdminController extends Controller
         $developer->update(['platform_fee_percent' => $data['platform_fee_percent']]);
 
         $paystackService = new PaystackService();
-        $paystackService->updateSubaccountFee($developer->paystack_subaccount_code,$data['platform_fee_percent'])
+        $paystackService->updateSubaccountFee($developer->paystack_subaccount_code,$data['platform_fee_percent']);
         return back()->with('success', 'Platform fee updated.');
     }
 

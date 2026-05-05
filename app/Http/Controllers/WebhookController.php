@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Mail\BookingConfirmed;
 use App\Models\Booking;
 use App\Services\PaystackService;
+use App\Services\Sms\EBulkSmsAlertService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
@@ -93,7 +94,7 @@ class WebhookController extends Controller
 
             Log::info("Booking {$booking->reference} marked as paid via webhook.");
              // ── Send confirmation email ────────────────────────────────────
-            $this->sendConfirmationEmail($booking->fresh(['developer']));
+            $this->sendConfirmation($booking->fresh(['developer']));
 
         } catch (\Exception $e) {
             Log::error("Failed to process charge.success for {$reference}", [
@@ -126,17 +127,43 @@ class WebhookController extends Controller
         }
     }
 
-    private function sendConfirmationEmail(Booking $booking): void
+    private function sendConfirmation(Booking $booking): void
     {
+        // ── Send confirmation email ────────────────────────────────────
         try {
             Mail::to($booking->customer_email)
                 ->send(new BookingConfirmed($booking, $booking->developer));
 
         } catch (\Exception $e) {
-            // Never let email failure break the webhook response
             Log::error("Failed to send confirmation email for {$booking->reference}", [
                 'error' => $e->getMessage(),
             ]);
+        }
+        $phone = $booking->developer->sms_number ?? null;
+        // ── Send SMS alert ─────────────────────────────────────────────
+        if (! $phone) {
+            try {
+                $developer = $booking->developer;
+
+                app(EBulkSmsAlertService::class)->sendCreditAlert($phone, [
+                    'business_name'  => $developer->business_name ?? $developer->name,
+                    'account_number' => $developer->account_number ?? '0000000000',
+                    'amount'         => $booking->amount,
+                    'description'    => "Booking payment - " . ($developer->business_name ?? $developer->name),
+                    'balance'        => null, // you can pass real balance if available
+                    'charge'         => $booking->platform_fee ?? 0,
+                    'reference'      => $booking->reference,
+                ]);
+
+                Log::info("SMS alert sent for booking {$booking->reference}", [
+                    'phone' => $phone,
+                ]);
+
+            } catch (\Exception $e) {
+                Log::error("Failed to send SMS alert for {$booking->reference}", [
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
     }
 }

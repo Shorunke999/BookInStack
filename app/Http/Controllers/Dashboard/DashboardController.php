@@ -35,7 +35,7 @@ class DashboardController extends Controller
         {
             return redirect()->route('superadmin.dashboard');
         }
-        
+
         $bookin_mode = $developer->booking_mode;
         $stats = [
 
@@ -196,7 +196,7 @@ class DashboardController extends Controller
     public function saveBookingSettings(Request $request): RedirectResponse
     {
         $developer = $this->effectiveDeveloper($request);
- 
+
         $request->validate([
             'booking_mode'          => 'required|in:appointment,ticket,reservation',
             'reservation_unit'      => 'nullable|in:night,day',
@@ -208,7 +208,7 @@ class DashboardController extends Controller
             'open_time'             => 'nullable|date_format:H:i',
             'close_time'            => 'nullable|date_format:H:i|after:open_time',
         ]);
- 
+
         $developer->update([
             'booking_mode'          => $request->booking_mode,
             'reservation_unit'      => $request->input('reservation_unit', 'night'),
@@ -221,18 +221,48 @@ class DashboardController extends Controller
                 'close_time' => $request->input('close_time', '17:00'),
             ],
         ]);
- 
+
         return back()->with('success', 'Booking settings saved.');
     }
-    
+
+    public function updateSmsNumber(Request $request): RedirectResponse
+    {
+        $developer = $this->effectiveDeveloper($request);
+
+        if (! $developer->bvn_verified) {
+            return back()->with('error', 'BVN verification required to update SMS number.');
+        }
+
+        $data = $request->validate([
+            'sms_number' => [
+                'required',
+                'string',
+                'regex:/^(0[7-9][01]\d{8}|234[7-9][01]\d{8})$/',
+            ],
+        ], [
+            'sms_number.regex' => 'Enter a valid Nigerian mobile number e.g. 08012345678',
+        ]);
+        $number = $data['sms_number'];
+
+        // Normalize to 08xxxxxxxxx format for consistency
+        if (str_starts_with($number, '234')) {
+            $number = '0' . substr($number, 3);
+        } elseif (str_starts_with($number, '+234')) {
+            $number = '0' . substr($number, 4);
+        }
+
+        $developer->update(['sms_number' => $number]);
+        return back()->with('success', 'SMS number updated successfully.');
+    }
+
     // ─── Widget Appearance ────────────────────────────────────────────────────────
-    
+
     // ─── Widget Appearance ────────────────────────────────────────────────────────
- 
+
     public function saveWidgetAppearance(Request $request): RedirectResponse
     {
         $developer = $this->effectiveDeveloper($request);
- 
+
         $request->validate([
             'bg_type'        => 'required|in:none,color,image',
             'bg_color'       => 'nullable|string|max:20',
@@ -242,17 +272,17 @@ class DashboardController extends Controller
             'border_radius'  => 'nullable|integer|min:0|max:28',
             'show_branding'  => 'boolean',
         ]);
- 
+
         // ── Handle image upload ────────────────────────────────────────────────
         $bgImageUrl = $request->input('bg_image_url', '');
- 
+
         if ($request->hasFile('bg_image_file') && $request->file('bg_image_file')->isValid()) {
             // Delete old image if it was a stored file
             $oldConfig = $developer->widget_config ?? [];
             if (!empty($oldConfig['bg_image_path'])) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($oldConfig['bg_image_path']);
             }
- 
+
             // Store new image in public/widget-backgrounds/
             $path = $request->file('bg_image_file')->store(
                 'widget-backgrounds',
@@ -260,7 +290,7 @@ class DashboardController extends Controller
             );
             $bgImageUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
         }
- 
+
         $developer->update([
             'widget_config' => [
                 'bg_type'       => $request->input('bg_type', 'none'),
@@ -272,7 +302,7 @@ class DashboardController extends Controller
                 'show_branding' => $request->boolean('show_branding'),
             ],
         ]);
- 
+
         return back()->with('success', 'Widget appearance saved.');
     }
 
