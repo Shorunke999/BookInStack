@@ -5,7 +5,6 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\Dashboard\BookingCategoryController;
 use App\Http\Controllers\Dashboard\PaymentLinkController;
 use App\Http\Controllers\Dashboard\DashboardController;
-use App\Http\Controllers\Dashboard\NinController;
 use App\Http\Controllers\Dashboard\StaffController;
 use App\Http\Controllers\DeveloperDomainController;
 use Illuminate\Support\Facades\Route;
@@ -45,6 +44,7 @@ Route::post('/email/verification-notification', [AuthController::class, 'verific
 
 });
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
 // ─── Authenticated dashboard routes ──────────────────────────────────────────
 Route::middleware('auth')->group(function () {
 
@@ -105,7 +105,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/booking-settings/save', [DashboardController::class, 'saveBookingSettings'])->name('dashboard.booking-settings.save');
         Route::post('/widget-apperance/save',[DashboardController::class, 'saveWidgetAppearance'])->name('dashboard.widget-appearance.save');
         Route::post('/dashboard/sms-number', [DashboardController::class, 'updateSmsNumber'])
-        ->name('dashboard.sms.update');
+            ->name('dashboard.sms.update');
         Route::post('/api-keys/regenerate', [DashboardController::class, 'regenerateKey'])->name('api-keys.regenerate');
         Route::post('/bvn/verify', [\App\Http\Controllers\Dashboard\VerificationController::class, 'verify'])
             ->name('bvn.verify');
@@ -119,7 +119,6 @@ Route::middleware('auth')->group(function () {
 
         Route::post('/domains', [DeveloperDomainController::class, 'store'])
             ->name('dashboard.domains.store');
-
         Route::delete('/domains', [DeveloperDomainController::class, 'delete'])
             ->name('dashboard.domains.delete');
 
@@ -151,15 +150,15 @@ Route::middleware('auth')->group(function () {
     });
 
     // ── Superadmin ────────────────────────────────────────────────────────────────
-Route::middleware(['superadmin'])->prefix('superadmin')->name('superadmin.')->group(function () {
-    Route::get('/',                              [\App\Http\Controllers\SuperAdmin\SuperAdminController::class, 'index'])      ->name('dashboard');
-    Route::get('/developers',                    [\App\Http\Controllers\SuperAdmin\SuperAdminController::class, 'developers']) ->name('developers');
-    Route::patch('/developers/{id}/fee',         [\App\Http\Controllers\SuperAdmin\SuperAdminController::class, 'updateFee']) ->name('developers.fee');
-    Route::patch('/developers/{id}/status',      [\App\Http\Controllers\SuperAdmin\SuperAdminController::class, 'updateStatus']) ->name('developers.status');
-    Route::get('/developers/{id}',               [\App\Http\Controllers\SuperAdmin\SuperAdminController::class, 'showDeveloper']) ->name('developers.show');
-    Route::get('/bookings',                      [\App\Http\Controllers\SuperAdmin\SuperAdminController::class, 'bookings'])   ->name('bookings');
-    Route::get('/revenue',                       [\App\Http\Controllers\SuperAdmin\SuperAdminController::class, 'revenue'])    ->name('revenue');
-});
+    Route::middleware(['superadmin'])->prefix('superadmin')->name('superadmin.')->group(function () {
+        Route::get('/',                              [\App\Http\Controllers\SuperAdmin\SuperAdminController::class, 'index'])      ->name('dashboard');
+        Route::get('/developers',                    [\App\Http\Controllers\SuperAdmin\SuperAdminController::class, 'developers']) ->name('developers');
+        Route::patch('/developers/{id}/fee',         [\App\Http\Controllers\SuperAdmin\SuperAdminController::class, 'updateFee']) ->name('developers.fee');
+        Route::patch('/developers/{id}/status',      [\App\Http\Controllers\SuperAdmin\SuperAdminController::class, 'updateStatus']) ->name('developers.status');
+        Route::get('/developers/{id}',               [\App\Http\Controllers\SuperAdmin\SuperAdminController::class, 'showDeveloper']) ->name('developers.show');
+        Route::get('/bookings',                      [\App\Http\Controllers\SuperAdmin\SuperAdminController::class, 'bookings'])   ->name('bookings');
+        Route::get('/revenue',                       [\App\Http\Controllers\SuperAdmin\SuperAdminController::class, 'revenue'])    ->name('revenue');
+    });
 
 });
 
@@ -169,6 +168,7 @@ Route::get('/', function () {
         ? redirect()->route('dashboard')
         : view('welcome');
 })->name('home');
+
 // ─── Public payment link pages (no auth) ─────────────────────────────────────
 Route::get  ('/pay/{token}',            [PaymentLinkController::class, 'publicShow'])->name('pay.show');
 Route::post ('/pay/{token}/initialize', [PaymentLinkController::class, 'publicPay'])->name('pay.initialize');

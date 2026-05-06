@@ -5,6 +5,7 @@ namespace App\Mail;
 use App\Models\Booking;
 use App\Models\Developer;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
@@ -17,9 +18,9 @@ class BookingConfirmed extends Mailable implements ShouldQueue
 
     public int $tries   = 3;       // retry 3 times if it fails
     public int $timeout = 60;      // give up after 60s per attempt
-    public int $backoff = 30; 
+    public int $backoff = 30;
 
-    
+
     public array  $modeConfig;
     public string $qrCodeSvg;
     public string $qrCodeBase64;

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Models\Payment;
+use App\Models\PaymentLink;
 use App\Services\PaystackService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -126,7 +127,10 @@ class PaymentController extends Controller
     {
         DB::transaction(function () use ($booking, $txData) {
             $split = $this->paystack->calculateSplit((int) $txData['amount'],$booking->developer);
-
+            Log::info("Recording successful payment for booking {$booking->reference}", [
+                'amount' => $txData['amount'],
+                'split' => $split,
+            ]);
             // Create payment record
             Payment::create([
                 'booking_id' => $booking->id,
@@ -143,9 +147,14 @@ class PaymentController extends Controller
                 'status' => 'success',
                 'paid_at' => now(),
             ]);
-
+        Log::info("Payment record created for booking {$booking->reference}");
             // Update booking status
-            $booking->markAsPaid($txData['reference']);
+            $booking->markAsPaid();
+            $token = $booking->payment_link_token;
+            if ($token) {
+                PaymentLink::where('token', $token)->update(['status' => 'paid', 'booking_id' => $booking->id]);
+            }
+            Log::info("Booking {$booking->reference} marked as paid : {$booking->status}");
         });
     }
 }

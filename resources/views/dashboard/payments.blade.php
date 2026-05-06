@@ -61,7 +61,7 @@
                             {{ $payment->booking?->category?->name ?? '—' }}
                         </td>
                         <td style="font-size:13px; white-space:nowrap;">
-                            ₦{{ number_format($payment->amount / 100, 2) }}
+                            ₦{{ number_format($payment->amount * ($payment->booking->nights() ?? 1) / 100, 2) }}
                         </td>
                         <td style="font-weight:700; color:var(--green); white-space:nowrap; font-size:13px;">
                             ₦{{ number_format($payment->developer_amount / 100, 2) }}

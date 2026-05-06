@@ -39,7 +39,7 @@ class DashboardController extends Controller
         $bookin_mode = $developer->booking_mode;
         $stats = [
 
-             'total_revenue'   => $developer->payments()->where('status', 'success')->sum('developer_amount') / 100,
+            'total_revenue'   => $developer->payments()->where('status', 'success')->sum('developer_amount') / 100,
             'monthly_revenue' => $developer->payments()->where('status', 'success')
                                     ->whereMonth('created_at', now()->month)->sum('developer_amount') / 100,
             'total_bookings'  => $developer->bookings()->where('booking_mode', $bookin_mode)->count(),
@@ -54,6 +54,7 @@ class DashboardController extends Controller
             ->latest()
             ->take(6)
             ->get();
+
          $modeConfig = $developer->modeConfig();
         return view('dashboard.index', compact('stats', 'recentBookings', 'modeConfig'));
     }

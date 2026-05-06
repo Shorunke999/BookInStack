@@ -161,13 +161,14 @@
         <div class="card">
             <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;">Payment</div>
             @php
+                $bookingAmount = $booking->amount * ($booking->nights() ?? 1);
                 $feePct      = $developer->platform_fee_percent ?? 5;
-                $platformFee = (int) round(($booking->amount * $feePct) /100 );
-                $devShare    = $booking->amount - $platformFee;
+                $platformFee = (int) round(($bookingAmount * $feePct) /100 );
+                $devShare    = $bookingAmount - $platformFee;
             @endphp
             <div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid var(--border);">
                 <span style="color:var(--muted);">Customer paid</span>
-                <strong>₦{{ number_format($booking->amount , 2) }}</strong>
+                <strong>₦{{ number_format($bookingAmount , 2) }}</strong>
             </div>
             <div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid var(--border);">
                 <span style="color:var(--muted);">Platform fee ({{ $feePct }}%)</span>

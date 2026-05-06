@@ -12,6 +12,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use App\Models\Developer;
+use Illuminate\Support\Facades\Log;
+
 class PaymentLinkController extends Controller
 {
     public function __construct(private PaystackService $paystack) {}
@@ -65,7 +67,7 @@ class PaymentLinkController extends Controller
             'expires_at'     => isset($data['expires_hours'])
                 ? now()->addHours((int) $data['expires_hours']) : null,
         ]);
-
+    Log::info("Payment link created: {$link} for developer {$developer->id}");
         return redirect()->route('payment-links.show-dashboard', $link->token)
             ->with('success', 'Payment link created! Share it with your customer.');
     }
@@ -199,6 +201,7 @@ class PaymentLinkController extends Controller
             'metadata'       => ['payment_link_token' => $token],
             'booked_via'            => 'payment_link',
             'payment_link_token'    => $token,
+            'booking_mode' =>  $link->developer->booking_mode
         ];
 
         if ($mode === 'reservation') {
@@ -237,7 +240,9 @@ class PaymentLinkController extends Controller
                 'bearer'             => 'account',
                 // 'transaction_charge' => $link->developer->platformFeeKobo($amount),
             ]);
-
+            $booking->update([
+                        'paystack_reference'   => $response['reference']
+                    ]);
             return response()->json([
                 'authorization_url' => $response['authorization_url'],
                 'booking_reference' => $booking->reference,

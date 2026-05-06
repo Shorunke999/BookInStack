@@ -116,7 +116,7 @@
                         @endif
 
                         <td style="font-weight:600; font-size:13px; white-space:nowrap;">
-                            ₦{{ number_format($booking->amount , 2) }}
+                            ₦{{ number_format($booking->amount *($booking->nights() ?? 1) , 2) }}
                         </td>
                         <td>@include('components.status-badge', ['status' => $booking->status])</td>
                     </tr>

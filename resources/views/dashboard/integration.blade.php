@@ -33,7 +33,7 @@
 </div>
 
 <div style="display:flex;gap:2px;margin-bottom:28px;border-bottom:1px solid var(--border);overflow-x:auto;">
-    @foreach([['quickstart','🚀','Quickstart'],['negotiate','💬','Negotiate'],['payment-links','🔗','Payment Links'],['modes','🗓','Modes'],['widget-config','🎨','Widget'],['webhook','🔔','Webhooks']] as [$id,$icon,$label])
+    @foreach([['quickstart','🚀','Quickstart'],['negotiate','💬','Negotiate'],['payment-links','🔗','Payment Links'],['modes','🗓','Modes'],['widget-config','🎨','Widget']] as [$id,$icon,$label])
         <button onclick="switchTab('{{ $id }}')" id="itab-{{ $id }}" style="padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:none;margin-bottom:-1px;transition:all .15s;white-space:nowrap;border-bottom:2px solid {{ $id==='quickstart'?'var(--accent)':'transparent' }};color:{{ $id==='quickstart'?'var(--accent)':'var(--muted)' }};">{{ $icon }} {{ $label }}</button>
     @endforeach
 </div>
@@ -153,7 +153,7 @@ Booking.catalog         // array of active categories</pre>
 </div>
 
 {{-- WEBHOOKS --}}
-<div id="ipanel-webhook" style="display:none;">
+{{-- <div id="ipanel-webhook" style="display:none;">
     <div class="card" style="margin-bottom:16px;"><h3 style="margin-bottom:8px;">Webhook URL</h3>
         <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">Register this in Paystack dashboard → Settings → Webhooks:</p>
         <div style="display:flex;gap:8px;align-items:center;"><code style="flex:1;font-size:13px;background:#f8fafc;padding:10px 14px;border-radius:6px;border:1px solid var(--border);word-break:break-all;">{{ config('app.url') }}/webhooks/paystack</code><button onclick="navigator.clipboard.writeText('{{ config('app.url') }}/webhooks/paystack').then(()=>this.textContent='Copied!').catch(()=>{})" class="btn btn-outline btn-sm">Copy</button></div>
@@ -168,11 +168,11 @@ Booking.catalog         // array of active categories</pre>
 composer require barryvdh/laravel-dompdf</pre>
         <p style="font-size:12px;color:var(--muted);margin-top:8px;">Both fail gracefully — emails send normally if not installed, QR and PDF are simply omitted.</p>
     </div>
-</div>
+</div> --}}
 
 @push('scripts')
 <script>
-const ITABS = ['quickstart','negotiate','payment-links','modes','widget-config','webhook'];
+const ITABS = ['quickstart','negotiate','payment-links','modes','widget-config'];
 function switchTab(id) {
     ITABS.forEach(t => {
         document.getElementById('ipanel-' + t).style.display = t === id ? 'block' : 'none';

@@ -12,6 +12,7 @@ class PaymentLink extends Model
         'customer_name', 'customer_email', 'customer_phone',
         'amount', 'description', 'note',
         'status', 'expires_at', 'paid_at',
+        'booking_id'
     ];
 
     protected $casts = [
@@ -22,7 +23,7 @@ class PaymentLink extends Model
 
     public function developer() { return $this->belongsTo(Developer::class); }
     public function category()  { return $this->belongsTo(BookingCategory::class, 'category_id'); }
-
+    public function booking()   { return $this->belongsTo(Booking::class, 'booking_id'); }
     public static function generateToken(): string
     {
         do { $token = Str::random(12); }
@@ -37,7 +38,8 @@ class PaymentLink extends Model
 
     public function formattedAmount(): string
     {
-        return '₦' . number_format($this->amount , 2);
+        $booking = Booking::where('payment_link_token', $this->token)->first();
+        return '₦' . number_format($this->amount * ($booking?->nights() ?? 1), 2);
     }
 
     public function publicUrl(): string

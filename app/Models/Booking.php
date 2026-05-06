@@ -94,11 +94,10 @@ public function attendedBy() { return $this->belongsTo(\App\Models\Developer::cl
         return $this->amount;
     }
 
-    public function markAsPaid(string $paystackReference): void
+    public function markAsPaid(): void
     {
         $this->update([
             'status' => 'paid',
-            'paystack_reference' => $paystackReference,
             'paid_at' => now(),
         ]);
     }
