@@ -139,6 +139,7 @@ class ServiceController extends Controller
             'reservation_unit'      => 'nullable|in:night,day',
             'enable_negotiate'      => 'boolean',
             'sms_number'            => 'nullable|string|max:20',
+            'enable_sms_notification' => 'boolean',
             'whatsapp_number'       => 'nullable|string|max:20',
             'enable_booking_window' => 'boolean',
             'window_days'           => 'nullable|array',

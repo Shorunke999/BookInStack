@@ -140,9 +140,10 @@ class WebhookController extends Controller
                 'error' => $e->getMessage(),
             ]);
         }
-        $phone = $booking->service()->sms_number ?? null;
+        $phone = $booking->service->sms_number ?? null;
+        Log::info('Retrieved phone number for SMS alert', ['phone' => $phone]);
         // ── Send SMS alert ─────────────────────────────────────────────
-        if (! $phone) {
+        if ($phone) {
             try {
                 $developer = $booking->developer;
                  Log::info('in the phone sms try-catch');

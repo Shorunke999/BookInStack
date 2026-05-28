@@ -14,6 +14,7 @@ return new class extends Migration
         });
 
         Schema::table('services', function (Blueprint $table) {
+            $table->boolean('enable_sms_notification')->default(false);
             $table->string('sms_number')->nullable();
         });
     }
@@ -25,6 +26,7 @@ return new class extends Migration
         });
 
         Schema::table('services', function (Blueprint $table) {
+            $table->dropColumn('enable_sms_notification');
             $table->dropColumn('sms_number');
         });
     }

@@ -92,7 +92,7 @@ class BookingCategory extends Model
      */
     public function toApiArray(string $mode): array
     {
-        
+
         $base = [
             'id'              => $this->id,
             'name'            => $this->name,
@@ -121,25 +121,39 @@ class BookingCategory extends Model
     }
 
        // ── Slot tracking ──────────────────────────────────────────────────────────
- 
+
     public function slotsBooked(): int
     {
-        $paid = $this->bookings()->where('status', 'paid');
- 
+        $paid = $this->bookings()->where('status', 'paid')->where('attended', false);
+
         if ($this->booking_mode === 'ticket') {
             return (int) $paid->selectRaw('COALESCE(SUM(adults + children), 0) as total')
                               ->value('total');
         }
- 
+
         return $paid->count();
     }
- 
+   public function activeBookings(): int
+    {
+        $query = $this->bookings()
+            ->where('status', 'paid')
+            ->where('attended', false);
+
+        if ($this->booking_mode === 'ticket') {
+            return (int) $query
+                ->selectRaw('COALESCE(SUM(adults + children), 0) as total')
+                ->value('total');
+        }
+
+        return $query->count();
+    }
+
     public function slotsRemaining(): ?int
     {
         if ($this->total_slots === null) return null;
-        return max(0, $this->total_slots - $this->slotsBooked());
+        return max(0, $this->total_slots - $this->activeBookings());
     }
- 
+
     public function isFull(): bool
     {
         if ($this->total_slots === null) return false;

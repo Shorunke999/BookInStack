@@ -28,6 +28,7 @@ class Service extends Model
         'public_key',
         'fraud_config',
         'sms_number',
+        'enable_sms_notification',
     ];
 
     protected $casts = [
