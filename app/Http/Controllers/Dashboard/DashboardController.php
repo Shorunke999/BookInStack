@@ -36,36 +36,56 @@ class DashboardController extends Controller
             return redirect()->route('superadmin.dashboard');
         }
 
-        $bookin_mode = $developer->booking_mode;
+                // ── Resolve active service ─────────────────────────────────────────────
+        $service = $developer->activeService();
+        $modeConfig = $service?->modeConfig() ?? [  // appointment
+                'mode' => 'appointment',
+                'label' => 'Appointment',
+                'plural' => 'Appointments',
+                'cta' => 'Book Appointment',
+                'amount_label' => 'Service Fee',
+                'desc_label' => 'Service',
+                'desc_placeholder' => 'e.g. Hair cut, Legal consultation',
+                'attendance_label' => 'Attended',
+                'success_message' => 'Appointment booked!',
+                'supports_quantity' => false,
+                'supports_dates' => true,   // preferred_date + preferred_time
+                'supports_time' => true,
+                'supports_daterange' => false,
+            ];
         $stats = [
-
             'total_revenue'   => $developer->payments()->where('status', 'success')->sum('developer_amount') / 100,
             'monthly_revenue' => $developer->payments()->where('status', 'success')
                                     ->whereMonth('created_at', now()->month)->sum('developer_amount') / 100,
-            'total_bookings'  => $developer->bookings()->where('booking_mode', $bookin_mode)->count(),
-            'paid_bookings'   => $developer->bookings()->where('booking_mode', $bookin_mode)->where('status', 'paid')->count(),
-            'pending_bookings'=> $developer->bookings()->where('booking_mode', $bookin_mode)->where('status', 'pending')->count(),
-            'attended'        => $developer->bookings()->where('booking_mode', $bookin_mode)->where('attended', true)->count(),
+             'total_bookings'   => $service?->bookings()->count(),
+            'paid_bookings'    => $service?->bookings()->where('status', 'paid')->count(),
+            'pending_bookings' => $service?->bookings()->where('status', 'pending')->count(),
+            'attended'         => $service?->bookings()->where('attended', true)->count(),
 
         ];
 
-        $recentBookings = $developer->bookings()
-            ->where('booking_mode', $bookin_mode)
-            ->latest()
-            ->take(6)
-            ->get();
-
-         $modeConfig = $developer->modeConfig();
-        return view('dashboard.index', compact('stats', 'recentBookings', 'modeConfig'));
+        $recentBookings = $service?->bookings()->latest()->take(6)->get() ?? collect();
+         // Pass all services for the context switcher in the topbar
+        $allServices = $developer->services()?->active()->get() ?? collect();
+        return view('dashboard.index', compact('stats', 'recentBookings', 'modeConfig','service', 'allServices'));
     }
 
     // ─── Bookings ─────────────────────────────────────────────────────────────────
     public function bookings(Request $request): View
     {
         $developer = $request->user();
-        $bookin_mode = $developer->booking_mode;
-        $query = $developer->bookings()->where('booking_mode', $bookin_mode)->with('category')->latest();
-        $modeConfig = $developer->modeConfig();
+        $service    = $developer->activeService();
+        if(!$service)
+        {
+            $services = collect();
+            return view('dashboard.services.index',[
+                'services' => $services
+            ])->with('success', 'Pls Create New Service!.');
+        }
+
+        $modeConfig = $service->modeConfig();
+        $query      = $service->bookings()->with('category')->latest();
+
 
         if ($request->filled('status') && $request->status !== 'all') {
             $query->where('status', $request->status);
@@ -83,13 +103,11 @@ class DashboardController extends Controller
             });
         }
 
-        $bookings = $query->paginate(20);
-         $categories = $developer->bookingCategories()
-                        ->forMode($developer->booking_mode)
-                        ->active()
-                        ->orderBy('sort_order')
-                        ->get();
-        return view('dashboard.bookings', compact('bookings', 'developer', 'modeConfig', 'categories'));
+         $bookings   = $query->paginate(20);
+        $categories = $service->bookingCategories()->active()->orderBy('sort_order')->get();
+        $allServices = $developer->visibleServices();
+
+        return view('dashboard.bookings', compact('bookings', 'developer', 'modeConfig', 'categories', 'service', 'allServices'));
     }
     public function showBooking(Request $request, string $reference): View
     {
@@ -168,30 +186,41 @@ class DashboardController extends Controller
     }
 
     // ─── Integration ──────────────────────────────────────────────────────────────
-    public function integration(Request $request): View
+      public function integration(Request $request): View
     {
-        $developer = $request->user();
-        $modeConfig = $developer->modeConfig();
-        $categories = $developer->bookingCategories()
-                        ->forMode($developer->booking_mode)
-                        ->active()
-                        ->orderBy('sort_order')
-                        ->get();
+        $developer  = $this->effectiveDeveloper($request);
+        $service    = $developer->activeService();
 
-        return view('dashboard.integration', compact('developer', 'modeConfig', 'categories'));
+        abort_unless($service, 404);
+
+        $modeConfig = $service->modeConfig();
+        $categories = $service->bookingCategories()->active()->orderBy('sort_order')->get();
+
+        return view('dashboard.integration', compact('developer', 'modeConfig', 'categories', 'service'));
     }
 
     // ─── Booking Window Settings ─────────────────────────────────────────────────
-    public function bookingSettings(Request $request): View
-    {
-        $developer  = $this->effectiveDeveloper($request);
-        $modeConfig = $developer->modeConfig();
-        $categories = $developer->bookingCategories()
-                        ->forMode($developer->booking_mode)
-                        ->orderBy('sort_order')
-                        ->get();
+    // public function bookingSettings(Request $request): View
+    // {
+    //     $developer  = $this->effectiveDeveloper($request);
+    //     $modeConfig = $developer->modeConfig();
+    //     $categories = $developer->bookingCategories()
+    //                     ->forMode($developer->booking_mode)
+    //                     ->orderBy('sort_order')
+    //                     ->get();
 
-        return view('dashboard.booking-settings', compact('developer', 'modeConfig', 'categories'));
+    //     return view('dashboard.booking-settings', compact('developer', 'modeConfig', 'categories'));
+    // }
+    public function bookingSettings(Request $request): RedirectResponse
+    {
+        $developer = $this->effectiveDeveloper($request);
+        $service   = $developer->activeService();
+
+        if ($service) {
+            return redirect()->route('services.edit', $service);
+        }
+
+        return redirect()->route('services.index');
     }
 
     public function saveBookingSettings(Request $request): RedirectResponse

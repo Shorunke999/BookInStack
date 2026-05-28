@@ -15,159 +15,140 @@ use Illuminate\View\View;
 
 class StaffController extends Controller
 {
-    /**
-     * GET /staff
-     */
     public function index(Request $request): View
     {
         $admin = $request->user();
 
         $staff = Developer::where('owner_id', $admin->id)
+            ->with('assignedServices')
             ->latest()
             ->paginate(20);
 
         return view('dashboard.staff.index', compact('staff'));
     }
 
-    /**
-     * GET /staff/create
-     */
-    public function create(): View
+    public function create(Request $request): View
     {
-        return view('dashboard.staff.create');
+        $admin    = $request->user();
+        $services = $admin->services()->active()->orderBy('sort_order')->get();
+
+        return view('dashboard.staff.create', compact('services'));
     }
 
-    /**
-     * POST /staff
-     */
     public function store(Request $request): RedirectResponse
     {
         $admin = $request->user();
 
         $data = $request->validate([
-            'name' => 'required|string|max:100',
-            'email' => 'required|email|unique:developers,email',
+            'name'     => 'required|string|max:100',
+            'email'    => 'required|email|unique:developers,email',
             'password' => ['required', 'confirmed', Password::min(8)],
-            'can_mark_attendance' => 'boolean',
+            'service_ids'   => 'nullable|array',
+            'service_ids.*' => 'integer|exists:services,id',
         ]);
 
         $staff = Developer::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-            'role' => 'staff',
-            'owner_id' => $admin->id,
-            'business_name' => $admin->business_name,
-            'status' => 'active',
-             'email_verified_at'  => now(),
+            'name'              => $data['name'],
+            'email'             => $data['email'],
+            'password'          => Hash::make($data['password']),
+            'role'              => 'staff',
+            'owner_id'          => $admin->id,
+            'business_name'     => $admin->business_name,
+            'status'            => 'active',
+            'email_verified_at' => now(),
         ]);
-        // Send login credentials to staff member
+
+        // Assign services — validate they belong to this admin
+        if (! empty($data['service_ids'])) {
+            $validIds = $admin->services()->whereIn('id', $data['service_ids'])->pluck('id');
+            $staff->assignedServices()->sync($validIds);
+        }
+
         try {
             defer(fn() => Mail::to($staff->email)->send(new StaffCredentials($staff, $data['password'], $admin)));
         } catch (\Exception $e) {
-            // Non-fatal — staff was created, just log the failure
             \Illuminate\Support\Facades\Log::error('Staff credentials email failed', [
                 'staff_id' => $staff->id,
                 'error'    => $e->getMessage(),
             ]);
         }
+
         return redirect()->route('staff.index')
             ->with('success', "Staff account created. Share the password with {$data['name']} securely.");
     }
 
-    /**
-     * GET /staff/{id}/edit
-     */
     public function edit(Request $request, int $id): View
     {
-        $staff = $this->findStaff($request, $id);
+        $admin    = $request->user();
+        $staff    = $this->findStaff($request, $id);
+        $services = $admin->services()->active()->orderBy('sort_order')->get();
 
-        return view('dashboard.staff.edit', compact('staff'));
+        return view('dashboard.staff.edit', compact('staff', 'services'));
     }
 
-    /**
-     * PUT /staff/{id}
-     */
     public function update(Request $request, int $id): RedirectResponse
     {
+        $admin = $request->user();
         $staff = $this->findStaff($request, $id);
 
         $data = $request->validate([
-            'name' => 'required|string|max:100',
-            'email' => 'required|email|unique:developers,email,'.$staff->id,
-            'password' => ['nullable', 'confirmed', Password::min(8)],
+            'name'          => 'required|string|max:100',
+            'email'         => 'required|email|unique:developers,email,' . $staff->id,
+            'password'      => ['nullable', 'confirmed', Password::min(8)],
+            'service_ids'   => 'nullable|array',
+            'service_ids.*' => 'integer|exists:services,id',
         ]);
 
         $staff->update([
-            'name' => $data['name'],
+            'name'  => $data['name'],
             'email' => $data['email'],
-            // Only update password if a new one was provided
-            ...(filled($data['password'])
-                ? ['password' => Hash::make($data['password'])]
-                : []
-            ),
+            ...(filled($data['password']) ? ['password' => Hash::make($data['password'])] : []),
         ]);
 
-        return redirect()->route('staff.index')
-            ->with('success', 'Staff account updated.');
+        // Re-sync service assignments
+        $validIds = $admin->services()->whereIn('id', $data['service_ids'] ?? [])->pluck('id');
+        $staff->assignedServices()->sync($validIds);
+
+        return redirect()->route('staff.index')->with('success', 'Staff account updated.');
     }
 
-    /**
-     * POST /staff/{id}/suspend
-     * Toggles between active and suspended.
-     */
     public function suspend(Request $request, int $id): RedirectResponse
     {
-        $staff = $this->findStaff($request, $id);
-
+        $staff     = $this->findStaff($request, $id);
         $newStatus = $staff->status === 'active' ? 'suspended' : 'active';
         $staff->update(['status' => $newStatus]);
-
         $label = $newStatus === 'active' ? 'reactivated' : 'suspended';
 
         return back()->with('success', "{$staff->name} has been {$label}.");
     }
 
-    /**
-     * DELETE /staff/{id}
-     */
     public function destroy(Request $request, int $id): RedirectResponse
     {
         $staff = $this->findStaff($request, $id);
-        $name = $staff->name;
+        $name  = $staff->name;
         $staff->delete();
 
-        return redirect()->route('staff.index')
-            ->with('success', "{$name}'s account has been deleted.");
+        return redirect()->route('staff.index')->with('success', "{$name}'s account has been deleted.");
     }
 
-     
-    /**
-     * Resend credentials with a fresh password.
-     */
     public function resendCredentials(int $id): RedirectResponse
     {
-        $admin         = auth()->user()->effectiveDeveloper();
+        $admin         = auth()->user();
         $staff         = $this->findStaff(request(), $id);
         $plainPassword = Str::password(12, true, true, false);
- 
+
         $staff->update(['password' => Hash::make($plainPassword)]);
- 
+
         try {
             defer(fn() => Mail::to($staff->email)->send(new StaffCredentials($staff, $plainPassword, $admin)));
-            return redirect()->route('staff.index')
-                ->with('success', "New credentials sent to {$staff->email}.");
+            return redirect()->route('staff.index')->with('success', "New credentials sent to {$staff->email}.");
         } catch (\Exception $e) {
-            return redirect()->route('staff.index')
-                ->with('error', 'Could not send email. Please try again.');
+            return redirect()->route('staff.index')->with('error', 'Could not send email. Please try again.');
         }
     }
- 
-    // ── Private helper ────────────────────────────────────────────────────────
 
     private function findStaff(Request $request, int $id): Developer
     {
-        // Scope to current admin's staff only — prevents accessing other admins' staff
         return Developer::where('id', $id)
             ->where('owner_id', $request->user()->id)
             ->where('role', 'staff')

@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Auth\CanResetPassword;
+    use App\Enums\OnboardingStatus;
 use Illuminate\Auth\Passwords\CanResetPassword as CanResetPasswordTrait;
 
 class Developer extends Authenticatable implements MustVerifyEmail, CanResetPassword
@@ -47,7 +48,9 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
             'sms_number',
             'platform_fee_percent',
             'booking_expires_at',
-            'allowed_domains'
+            'allowed_domains',
+            'active_service_id',
+            'onboarding_status'
 
     ];
 
@@ -58,7 +61,6 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
     ];
 
     protected $casts = [
-        'bvn_verified' => 'boolean',
         'password' => 'hashed',
         'enable_booking_window' => 'boolean',
         'booking_window' => 'array',
@@ -84,6 +86,11 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
     {
         return $this->hasMany(BookingCategory::class);
     }
+
+    public function services()
+{
+    return $this->hasMany(\App\Models\Service::class)->orderBy('sort_order');
+}
     // Get the account owner — for staff this returns their admin, for admin returns self
     public function owner()
     {
@@ -93,6 +100,15 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
     public function staff()
     {
         return $this->hasMany(Developer::class, 'owner_id');
+    }
+    public function assignedServices()
+    {
+        return $this->belongsToMany(
+            \App\Models\Service::class,
+            'developer_service',
+            'developer_id',
+            'service_id'
+        )->withTimestamps();
     }
 
     // ─── Scopes ─────────────────────────────────────────────────────────────────
@@ -170,13 +186,6 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
         return $this->email;
     }
 
-    // Staff use their admin's subaccount and keys
-    public function effectiveSubaccountCode(): string
-    {
-        return $this->isStaff()
-            ? $this->owner->paystack_subaccount_code
-            : $this->paystack_subaccount_code;
-    }
 
     // Helper method — add to model:
     public function platformFeeKobo(int $amountKobo): int
@@ -189,61 +198,110 @@ class Developer extends Authenticatable implements MustVerifyEmail, CanResetPass
     {
         return $amountKobo - $this->platformFeeKobo($amountKobo);
     }
-    /**
-     * Full config for the current booking mode.
-     * Used by the API status endpoint and dashboard views.
-     */
-    public function modeConfig(): array
+
+    // Relationships
+    public function onboarding(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
-        return match ($this->booking_mode) {
-
-            'ticket' => [
-                'mode' => 'ticket',
-                'label' => 'Ticket',
-                'plural' => 'Tickets',
-                'cta' => 'Buy Ticket',
-                'amount_label' => 'Ticket Price',
-                'desc_label' => 'Event Name',
-                'desc_placeholder' => 'e.g. Tech Conference 2025',
-                'attendance_label' => 'Checked In',
-                'success_message' => 'Ticket confirmed!',
-                'supports_quantity' => true,
-                'supports_dates' => false,
-                'supports_time' => false,
-                'supports_daterange' => false,
-            ],
-
-            'reservation' => [
-                'mode' => 'reservation',
-                'label' => 'Reservation',
-                'plural' => 'Reservations',
-                'cta' => 'Reserve Now',
-                'amount_label' => 'Rate per Night',
-                'desc_label' => 'Room / Space',
-                'desc_placeholder' => 'e.g. Deluxe Room, Event Hall A',
-                'attendance_label' => 'Checked Out',
-                'success_message' => 'Reservation confirmed!',
-                'supports_quantity' => false,
-                'supports_dates' => false,
-                'supports_time' => false,
-                'supports_daterange' => true,   // check_in / check_out
-            ],
-
-            default => [  // appointment
-                'mode' => 'appointment',
-                'label' => 'Appointment',
-                'plural' => 'Appointments',
-                'cta' => 'Book Appointment',
-                'amount_label' => 'Service Fee',
-                'desc_label' => 'Service',
-                'desc_placeholder' => 'e.g. Hair cut, Legal consultation',
-                'attendance_label' => 'Attended',
-                'success_message' => 'Appointment booked!',
-                'supports_quantity' => false,
-                'supports_dates' => true,   // preferred_date + preferred_time
-                'supports_time' => true,
-                'supports_daterange' => false,
-            ],
-        };
+        return $this->hasOne(\App\Models\Onboarding::class);
     }
+
+    // Replace bvn_verified checks everywhere with this:
+    public function isVerified(): bool
+    {
+        return $this->onboarding_status === OnboardingStatus::Complete;
+    }
+
+    public function isOnboarded(): bool
+    {
+        return in_array($this->onboarding_status, [
+            OnboardingStatus::AccountCreated,
+            OnboardingStatus::Complete,
+        ]);
+    }
+
+
+
+/**
+ * Switch the active service context for this developer.
+ * Call from ServiceController@activate.
+ */
+public function switchService(\App\Models\Service $service): void
+{
+    //abort_if($service->developer_id !== $this->id, 403);
+    $this->update(['active_service_id' => $service->id]);
+}
+/**
+ * Returns the services this developer can see.
+ * Admins → all their services.
+ * Staff  → only their assigned services (scoped to their owner).
+ */
+public function accessibleServices()
+{
+    if ($this->isStaff()) {
+        return $this->assignedServices()->where('developer_id_owner', $this->owner_id);
+        // Simpler: just return assigned directly — pivot already scopes correctly
+    }
+
+    // Admin — return all their services
+    return $this->services();
+}
+
+/**
+ * Resolve which services are visible to this user.
+ * Returns a Collection (not a query builder) for convenience in controllers/views.
+ */
+public function visibleServices(): \Illuminate\Database\Eloquent\Collection
+{
+    if ($this->isStaff()) {
+        // Staff sees only assigned services from their owner
+        return $this->assignedServices()
+                    ->whereHas('developer', fn($q) => $q->where('id', $this->owner_id))
+                    ->active()
+                    ->orderBy('sort_order')
+                    ->get();
+    }
+
+    return $this->services()->active()->orderBy('sort_order')->get();
+}
+
+/**
+ * Active service for staff is resolved from their assigned services
+ * (falls back to first assigned if stored ID not accessible).
+ */
+public function activeService(): ?\App\Models\Service
+{
+    if ($this->isStaff()) {
+        $assigned = $this->assignedServices()->active()->orderBy('sort_order')->pluck('services.id');
+
+        if ($this->active_service_id && $assigned->contains($this->active_service_id)) {
+            return \App\Models\Service::find($this->active_service_id);
+        }
+
+        return \App\Models\Service::find($assigned->first());
+    }
+
+    // Admin path — same as before
+    if ($this->active_service_id) {
+        return $this->services()->find($this->active_service_id);
+    }
+
+    return $this->services()->where('status', 'active')->first();
+}
+/**
+ * Keep backward-compat: modeConfig() now delegates to active service.
+ * Old code calling $developer->modeConfig() keeps working.
+ */
+public function modeConfig(): array
+{
+    return $this->activeService()?->modeConfig() ?? [];
+}
+
+/**
+ * Convenience: active booking_mode (read from active service).
+ * Replaces direct $developer->booking_mode reads in controllers.
+ */
+public function activeMode(): string
+{
+    return $this->activeService()?->booking_mode ?? $this->booking_mode;
+}
 }

@@ -3,51 +3,54 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BookInStack — Bookings & Payments for Businessess</title>
+    <title>BookInStack — Bookings & Payments for Businesses</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --ink:    #0d0d14;
-            --muted:  #64748b;
-            --border: #e2e8f0;
-            --accent: #4f46e5;
-            --violet: #7c3aed;
-            --green:  #10b981;
-            --soft:   #f8fafc;
+            --ink:      #0f1117;
+            --ink-mid:  #3a3f52;
+            --muted:    #7e8599;
+            --border:   #e8eaef;
+            --surface:  #f5f6f8;
+            --accent:   #2563eb;
+            --accent-h: #1d4ed8;
+            --green:    #059669;
+            --white:    #ffffff;
         }
 
         html { scroll-behavior: smooth; }
 
         body {
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Sora', sans-serif;
             color: var(--ink);
-            background: #fff;
+            background: var(--white);
             overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* ── Nav ────────────────────────────────────────────── */
+        /* ── Nav ───────────────────────────────────────────────── */
         nav {
             position: fixed;
             top: 0; left: 0; right: 0;
-            height: 64px;
+            height: 60px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 5vw;
+            padding: 0 clamp(24px, 5vw, 80px);
             z-index: 100;
-            background: rgba(255,255,255,.85);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(0,0,0,.06);
+            background: rgba(255,255,255,.92);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
         }
 
         .nav-logo {
-            font-size: 20px;
-            font-weight: 800;
+            font-size: 16px;
+            font-weight: 700;
             color: var(--ink);
-            letter-spacing: -.4px;
+            letter-spacing: -.3px;
             text-decoration: none;
         }
 
@@ -56,443 +59,477 @@
         .nav-links {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 4px;
         }
 
         .nav-link {
-            font-size: 14px;
+            font-size: 13.5px;
             font-weight: 500;
             color: var(--muted);
             text-decoration: none;
-            padding: 8px 14px;
-            border-radius: 8px;
-            transition: all .15s;
+            padding: 7px 14px;
+            border-radius: 6px;
+            transition: color .15s, background .15s;
+            letter-spacing: -.01em;
         }
 
-        .nav-link:hover { color: var(--ink); background: var(--soft); }
+        .nav-link:hover { color: var(--ink); background: var(--surface); }
 
         .nav-cta {
-            background: var(--accent);
-            color: #fff !important;
+            background: var(--ink);
+            color: var(--white) !important;
             font-weight: 600;
+            letter-spacing: -.01em;
         }
 
-        .nav-cta:hover { background: #4338ca !important; }
+        .nav-cta:hover { background: #1a1f2e !important; }
 
-        /* ── Hero ───────────────────────────────────────────── */
+        /* ── Hero ──────────────────────────────────────────────── */
         .hero {
             min-height: 100vh;
             display: flex;
             align-items: center;
-            justify-content: center;
-            padding: 100px 5vw 60px;
+            padding: 120px clamp(24px, 5vw, 80px) 80px;
+            background: var(--ink);
             position: relative;
             overflow: hidden;
-            background: var(--ink);
         }
 
-        /* Animated gradient orbs */
-        .hero::before, .hero::after {
+        /* Subtle grid texture */
+        .hero::before {
             content: '';
             position: absolute;
-            border-radius: 50%;
-            filter: blur(80px);
-            opacity: .35;
-            animation: drift 8s ease-in-out infinite alternate;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+            background-size: 48px 48px;
+            pointer-events: none;
         }
 
-        .hero::before {
-            width: 500px; height: 500px;
-            background: radial-gradient(circle, #4f46e5, transparent);
-            top: -100px; right: -100px;
-        }
-
+        /* Single focused glow */
         .hero::after {
-            width: 400px; height: 400px;
-            background: radial-gradient(circle, #7c3aed, transparent);
-            bottom: -80px; left: -80px;
-            animation-delay: -4s;
-        }
-
-        @keyframes drift {
-            from { transform: translate(0, 0) scale(1); }
-            to   { transform: translate(30px, 20px) scale(1.1); }
+            content: '';
+            position: absolute;
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(37,99,235,.18) 0%, transparent 70%);
+            top: -100px; right: -100px;
+            pointer-events: none;
         }
 
         .hero-inner {
             position: relative;
             z-index: 2;
-            text-align: center;
-            max-width: 700px;
+            max-width: 640px;
         }
 
-        .hero-pill {
+        .hero-tag {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            background: rgba(99,102,241,.15);
-            border: 1px solid rgba(99,102,241,.3);
-            color: #a5b4fc;
-            font-size: 12px;
+            gap: 8px;
+            color: rgba(255,255,255,.4);
+            font-size: 11.5px;
             font-weight: 600;
-            padding: 5px 14px;
-            border-radius: 20px;
-            letter-spacing: .04em;
+            letter-spacing: .1em;
             text-transform: uppercase;
-            margin-bottom: 28px;
+            margin-bottom: 32px;
+        }
+
+        .hero-tag::before {
+            content: '';
+            display: block;
+            width: 20px;
+            height: 1px;
+            background: var(--accent);
         }
 
         .hero h1 {
-            font-size: clamp(36px, 6vw, 64px);
-            font-weight: 800;
+            font-size: clamp(38px, 5.5vw, 64px);
+            font-weight: 700;
             color: #fff;
-            line-height: 1.1;
-            letter-spacing: -.03em;
-            margin-bottom: 20px;
+            line-height: 1.08;
+            letter-spacing: -.04em;
+            margin-bottom: 24px;
         }
 
-        .hero h1 .grad {
-            background: linear-gradient(135deg, #818cf8, #c084fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .hero h1 em {
+            font-style: normal;
+            color: transparent;
+            -webkit-text-stroke: 1px rgba(255,255,255,.35);
         }
 
         .hero-sub {
-            font-size: clamp(15px, 2vw, 18px);
-            color: #94a3b8;
-            line-height: 1.6;
-            max-width: 520px;
-            margin: 0 auto 36px;
+            font-size: clamp(15px, 1.8vw, 17px);
+            color: rgba(255,255,255,.45);
+            line-height: 1.7;
+            max-width: 480px;
+            margin-bottom: 40px;
+            font-weight: 400;
         }
 
         .hero-actions {
             display: flex;
-            gap: 12px;
-            justify-content: center;
+            align-items: center;
+            gap: 16px;
             flex-wrap: wrap;
         }
 
-        .btn-hero-primary {
+        .btn-primary {
             background: var(--accent);
             color: #fff;
-            padding: 13px 28px;
-            border-radius: 10px;
-            font-size: 15px;
+            padding: 12px 24px;
+            border-radius: 7px;
+            font-size: 14px;
             font-weight: 600;
             text-decoration: none;
-            transition: all .2s;
-            box-shadow: 0 4px 20px rgba(79,70,229,.4);
+            letter-spacing: -.01em;
+            transition: background .2s, transform .15s;
         }
 
-        .btn-hero-primary:hover {
-            background: #4338ca;
+        .btn-primary:hover {
+            background: var(--accent-h);
             transform: translateY(-1px);
-            box-shadow: 0 6px 28px rgba(79,70,229,.5);
         }
 
-        .btn-hero-ghost {
-            background: rgba(255,255,255,.06);
-            border: 1px solid rgba(255,255,255,.12);
-            color: #fff;
-            padding: 13px 28px;
-            border-radius: 10px;
-            font-size: 15px;
+        .btn-ghost {
+            color: rgba(255,255,255,.5);
+            font-size: 13.5px;
             font-weight: 500;
             text-decoration: none;
-            transition: all .2s;
+            letter-spacing: -.01em;
+            transition: color .15s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .btn-hero-ghost:hover { background: rgba(255,255,255,.1); }
+        .btn-ghost:hover { color: rgba(255,255,255,.85); }
 
-        
+        .btn-ghost::after {
+            content: '→';
+            transition: transform .15s;
+        }
 
-        .kw  { color: #cba6f7; }
-        .str { color: #a6e3a1; }
-        .fn  { color: #89dceb; }
-        .cm  { color: #585b70; }
-        .nm  { color: #fab387; }
+        .btn-ghost:hover::after { transform: translateX(3px); }
 
-        /* ── Stats bar ───────────────────────────────────────── */
+        /* ── Three points below CTA ───────────────────────────── */
+        .hero-points {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-top: 52px;
+            padding-top: 40px;
+            border-top: 1px solid rgba(255,255,255,.07);
+            max-width: 480px;
+        }
+
+        .hero-point {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            font-size: 13.5px;
+            color: rgba(255,255,255,.5);
+            line-height: 1.5;
+        }
+
+        .hero-point-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--accent);
+            flex-shrink: 0;
+            margin-top: 6px;
+        }
+
+        /* ── Stats ─────────────────────────────────────────────── */
         .stats-bar {
-            background: var(--soft);
-            border-top: 1px solid var(--border);
-            border-bottom: 1px solid var(--border);
-            padding: 28px 5vw;
             display: flex;
             justify-content: center;
-            gap: clamp(32px, 6vw, 80px);
+            gap: clamp(40px, 7vw, 100px);
             flex-wrap: wrap;
+            padding: 36px clamp(24px, 5vw, 80px);
+            border-bottom: 1px solid var(--border);
+            background: var(--white);
         }
 
         .stat-item { text-align: center; }
 
         .stat-item .num {
-            font-size: 28px;
-            font-weight: 800;
-            color: var(--ink);
-            letter-spacing: -.04em;
-            line-height: 1;
-        }
-
-        .stat-item .lbl {
-            font-size: 13px;
-            color: var(--muted);
-            margin-top: 4px;
-        }
-
-        /* ── Features ────────────────────────────────────────── */
-        .section {
-            padding: clamp(60px, 8vw, 100px) 5vw;
-        }
-
-        .section-label {
-            font-size: 12px;
+            font-size: 26px;
             font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .1em;
-            color: var(--accent);
-            margin-bottom: 12px;
-        }
-
-        .section h2 {
-            font-size: clamp(26px, 4vw, 40px);
-            font-weight: 800;
-            color: var(--ink);
-            letter-spacing: -.03em;
-            max-width: 560px;
-            line-height: 1.15;
-            margin-bottom: 16px;
-        }
-
-        .section-sub {
-            font-size: 16px;
-            color: var(--muted);
-            max-width: 480px;
-            line-height: 1.6;
-            margin-bottom: 48px;
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 20px;
-        }
-
-        .feature-card {
-            background: #fff;
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 24px;
-            transition: all .2s;
-        }
-
-        .feature-card:hover {
-            border-color: #c7d2fe;
-            box-shadow: 0 4px 24px rgba(79,70,229,.08);
-            transform: translateY(-2px);
-        }
-
-        .feature-icon {
-            width: 44px; height: 44px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            margin-bottom: 14px;
-        }
-
-        .feature-card h4 {
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--ink);
-            margin-bottom: 6px;
-        }
-
-        .feature-card p {
-            font-size: 14px;
-            color: var(--muted);
-            line-height: 1.6;
-        }
-
-        /* ── How it works ─────────────────────────────────────── */
-        .steps {
-            background: var(--ink);
-            padding: clamp(60px, 8vw, 100px) 5vw;
-        }
-
-        .steps h2 {
-            font-size: clamp(26px, 4vw, 40px);
-            font-weight: 800;
-            color: #fff;
-            letter-spacing: -.03em;
-            text-align: center;
-            margin-bottom: 48px;
-        }
-
-        .steps-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 24px;
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
-        .step {
-            text-align: center;
-            padding: 28px 20px;
-            background: rgba(255,255,255,.04);
-            border: 1px solid rgba(255,255,255,.08);
-            border-radius: 14px;
-        }
-
-        .step-num {
-            width: 40px; height: 40px;
-            background: var(--accent);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            font-size: 16px;
-            color: #fff;
-            margin: 0 auto 16px;
-        }
-
-        .step h4 { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 8px; }
-        .step p  { font-size: 13px; color: #64748b; line-height: 1.6; }
-
-        /* ── Pricing ─────────────────────────────────────────── */
-        .pricing-card {
-            background: #fff;
-            border: 2px solid var(--accent);
-            border-radius: 16px;
-            padding: 36px;
-            max-width: 420px;
-            margin: 0 auto;
-            text-align: center;
-            box-shadow: 0 8px 40px rgba(79,70,229,.12);
-        }
-
-        .pricing-badge {
-            display: inline-block;
-            background: var(--accent);
-            color: #fff;
-            font-size: 12px;
-            font-weight: 700;
-            padding: 4px 12px;
-            border-radius: 20px;
-            letter-spacing: .06em;
-            text-transform: uppercase;
-            margin-bottom: 20px;
-        }
-
-        .pricing-price {
-            font-size: 52px;
-            font-weight: 800;
             color: var(--ink);
             letter-spacing: -.05em;
             line-height: 1;
         }
 
-        .pricing-price sup { font-size: 24px; font-weight: 600; vertical-align: top; margin-top: 8px; }
-        .pricing-price .per { font-size: 16px; font-weight: 400; color: var(--muted); }
+        .stat-item .lbl {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 5px;
+            letter-spacing: .01em;
+        }
+
+        /* ── Sections ──────────────────────────────────────────── */
+        .section {
+            padding: clamp(72px, 9vw, 112px) clamp(24px, 5vw, 80px);
+        }
+
+        .section-eyebrow {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            color: var(--accent);
+            margin-bottom: 18px;
+        }
+
+        .section h2 {
+            font-size: clamp(26px, 3.5vw, 38px);
+            font-weight: 700;
+            color: var(--ink);
+            letter-spacing: -.035em;
+            line-height: 1.15;
+            max-width: 500px;
+            margin-bottom: 14px;
+        }
+
+        .section-sub {
+            font-size: 15.5px;
+            color: var(--muted);
+            max-width: 440px;
+            line-height: 1.65;
+            margin-bottom: 56px;
+        }
+
+        /* ── Features grid ────────────────────────────────────── */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(268px, 1fr));
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .feature-card {
+            background: var(--white);
+            padding: 28px;
+            transition: background .2s;
+        }
+
+        .feature-card:hover { background: #fafbfd; }
+
+        .feature-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 10px;
+        }
+
+        .feature-card h4 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--ink);
+            letter-spacing: -.02em;
+            margin-bottom: 8px;
+        }
+
+        .feature-card p {
+            font-size: 13.5px;
+            color: var(--muted);
+            line-height: 1.65;
+        }
+
+        /* ── Steps (dark) ─────────────────────────────────────── */
+        .steps {
+            background: var(--ink);
+            padding: clamp(72px, 9vw, 112px) clamp(24px, 5vw, 80px);
+        }
+
+        .steps .section-eyebrow { color: rgba(255,255,255,.3); }
+
+        .steps h2 {
+            font-size: clamp(26px, 3.5vw, 38px);
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -.035em;
+            line-height: 1.15;
+            max-width: 420px;
+            margin-bottom: 56px;
+        }
+
+        .steps-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0;
+            max-width: 900px;
+            border: 1px solid rgba(255,255,255,.07);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .step {
+            padding: 32px 28px;
+            border-right: 1px solid rgba(255,255,255,.07);
+            border-bottom: 1px solid rgba(255,255,255,.07);
+        }
+
+        .step:last-child { border-right: none; }
+
+        .step-num {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            font-weight: 500;
+            color: rgba(255,255,255,.2);
+            letter-spacing: .06em;
+            margin-bottom: 20px;
+        }
+
+        .step h4 {
+            font-size: 14.5px;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: -.02em;
+            margin-bottom: 8px;
+        }
+
+        .step p {
+            font-size: 13px;
+            color: rgba(255,255,255,.35);
+            line-height: 1.65;
+        }
+
+        /* ── Pricing ──────────────────────────────────────────── */
+        .pricing-wrap {
+            max-width: 440px;
+            margin: 0 auto;
+            text-align: left;
+        }
+
+        .pricing-card {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 36px;
+            background: var(--white);
+        }
+
+        .pricing-header {
+            margin-bottom: 32px;
+        }
+
+        .pricing-badge {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--green);
+            background: #ecfdf5;
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+        }
+
+        .pricing-headline {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--ink);
+            letter-spacing: -.03em;
+            margin-bottom: 6px;
+        }
 
         .pricing-desc {
-            font-size: 14px;
+            font-size: 13.5px;
             color: var(--muted);
-            margin: 12px 0 28px;
         }
 
         .pricing-features {
             list-style: none;
-            text-align: left;
-            margin-bottom: 28px;
+            margin-bottom: 32px;
         }
 
         .pricing-features li {
             font-size: 14px;
-            color: var(--ink);
-            padding: 8px 0;
+            color: var(--ink-mid);
+            padding: 11px 0;
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            letter-spacing: -.01em;
         }
 
         .pricing-features li:last-child { border-bottom: none; }
 
         .pricing-features li::before {
-            content: '✓';
-            color: var(--green);
-            font-weight: 700;
-            font-size: 13px;
+            content: '';
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--green);
+            flex-shrink: 0;
         }
 
         .btn-pricing {
             display: block;
-            background: var(--accent);
+            width: 100%;
+            background: var(--ink);
             color: #fff;
             padding: 13px;
-            border-radius: 10px;
-            font-size: 15px;
+            border-radius: 7px;
+            font-size: 14px;
             font-weight: 600;
             text-decoration: none;
-            transition: all .2s;
-        }
-
-        .btn-pricing:hover { background: #4338ca; }
-
-        /* ── CTA ─────────────────────────────────────────────── */
-        .cta {
-            background: linear-gradient(135deg, var(--accent), var(--violet));
-            padding: clamp(60px, 8vw, 100px) 5vw;
             text-align: center;
+            letter-spacing: -.01em;
+            transition: background .2s;
         }
 
-        .cta h2 {
-            font-size: clamp(26px, 4vw, 40px);
-            font-weight: 800;
-            color: #fff;
-            letter-spacing: -.03em;
-            margin-bottom: 12px;
-        }
-
-        .cta p {
-            font-size: 16px;
-            color: rgba(255,255,255,.75);
-            margin-bottom: 32px;
-        }
+        .btn-pricing:hover { background: #1a1f2e; }
 
         /* ── Footer ──────────────────────────────────────────── */
         footer {
-            background: var(--ink);
-            padding: 28px 5vw;
+            border-top: 1px solid var(--border);
+            padding: 28px clamp(24px, 5vw, 80px);
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 12px;
+            background: var(--white);
         }
 
         footer .logo {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 700;
-            color: #fff;
+            color: var(--ink);
+            letter-spacing: -.02em;
         }
 
-        footer .logo span { color: #818cf8; }
+        footer .logo span { color: var(--accent); }
 
         footer p {
-            font-size: 13px;
-            color: #475569;
+            font-size: 12.5px;
+            color: var(--muted);
         }
 
         /* ── Responsive ──────────────────────────────────────── */
         @media (max-width: 640px) {
             .nav-link:not(.nav-cta) { display: none; }
-            .stats-bar { gap: 24px; }
+            .steps-list { grid-template-columns: 1fr 1fr; }
+            .step { border-right: none; }
+            .step:nth-child(odd) { border-right: 1px solid rgba(255,255,255,.07); }
+        }
+
+        @media (max-width: 400px) {
+            .steps-list { grid-template-columns: 1fr; }
+            .step { border-right: none; }
         }
     </style>
 </head>
@@ -505,49 +542,50 @@
         <a href="#features" class="nav-link">Features</a>
         <a href="#pricing" class="nav-link">Pricing</a>
         <a href="{{ route('login') }}" class="nav-link">Sign in</a>
-        <a href="{{ route('register') }}" class="nav-link nav-cta">Get Started →</a>
+        <a href="{{ route('register') }}" class="nav-link nav-cta">Get started</a>
     </div>
 </nav>
 
 <!-- Hero -->
 <section class="hero">
     <div class="hero-inner">
-        <div class="hero-pill">⚡ For Nigerian Bussinesses</div>
+        <div class="hero-tag">For Nigerian Businesses</div>
 
-          <h1>
-            Your business,<br />
-            fully booked &<br />
-            <span class="grad">getting paid online</span>
+        <h1>
+            Your business,<br>
+            fully booked &amp;<br>
+            <em>getting paid</em>
         </h1>
- 
+
         <p class="hero-sub">
             BookInStack gives your business a professional booking and payment
-            system — no tech skills needed. Set up in minutes, start earning today.
+            system. No tech skills needed. Set up in minutes, start earning today.
         </p>
 
         <div class="hero-actions">
-            <a href="{{ route('register') }}" class="btn-hero-primary">Start for free →</a>
-            <a href="#how-it-works" class="btn-hero-ghost">See how it works</a>
+            <a href="{{ route('register') }}" class="btn-primary">Start for free</a>
+            <a href="#how-it-works" class="btn-ghost">See how it works</a>
         </div>
-            <div style="display:flex;flex-direction:column;gap:12px;margin-top:24px;max-width:480px;margin-left:auto;margin-right:auto;">
-                <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.06);padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.1);">
-                    <span style="font-size:22px;">📋</span>
-                    <span style="font-size:14px;color:rgba(255,255,255,.85);">Customers book and pay directly from your website</span>
-                </div>
-                <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.06);padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.1);">
-                    <span style="font-size:22px;">💳</span>
-                    <span style="font-size:14px;color:rgba(255,255,255,.85);">Payments hit your bank account — 95% goes straight to you</span>
-                </div>
-                <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.06);padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.1);">
-                    <span style="font-size:22px;">🎟</span>
-                    <span style="font-size:14px;color:rgba(255,255,255,.85);">Ticket QR codes, check-in tracking, staff accounts — all included</span>
-                </div>
+
+        <div class="hero-points">
+            <div class="hero-point">
+                <div class="hero-point-dot"></div>
+                <span>Customers book and pay directly from your website</span>
             </div>
+            <div class="hero-point">
+                <div class="hero-point-dot"></div>
+                <span>Payments hit your bank account — 95% goes straight to you</span>
+            </div>
+            <div class="hero-point">
+                <div class="hero-point-dot"></div>
+                <span>QR check-in, staff accounts, and booking management — all included</span>
+            </div>
+        </div>
     </div>
 </section>
 
 <!-- Stats bar -->
-<div class="stats-bar">
+{{-- <div class="stats-bar">
     <div class="stat-item">
         <div class="num">3</div>
         <div class="lbl">Lines to integrate</div>
@@ -560,11 +598,11 @@
         <div class="num">₦0</div>
         <div class="lbl">Monthly fee</div>
     </div>
-</div>
+</div> --}}
 
 <!-- Features -->
 <section class="section" id="features">
-    <div class="section-label">Features</div>
+    <div class="section-eyebrow">Features</div>
     <h2>Everything you need, nothing you don't</h2>
     <p class="section-sub">
         One SDK. One API key. Full booking and payment infrastructure that just works.
@@ -572,59 +610,61 @@
 
     <div class="features-grid">
         <div class="feature-card">
-            <div class="feature-icon" style="background:#eef2ff;">💳</div>
-            <h4>Paystack-powered payments</h4>
+            <div class="feature-label">Payments</div>
+            <h4>Paystack-powered checkout</h4>
             <p>Card, bank transfer, USSD — all channels supported. Settlements hit your account directly via subaccounts.</p>
         </div>
         <div class="feature-card">
-            <div class="feature-icon" style="background:#dcfce7;">📋</div>
+            <div class="feature-label">Bookings</div>
             <h4>Booking management</h4>
             <p>Create, track, and manage bookings. Mark attendance, search by customer, filter by status.</p>
         </div>
         <div class="feature-card">
-            <div class="feature-icon" style="background:#fef9c3;">⏰</div>
+            <div class="feature-label">Scheduling</div>
             <h4>Booking windows</h4>
             <p>Restrict when bookings are accepted. Set open days and hours — bookings outside that window are automatically rejected.</p>
         </div>
         <div class="feature-card">
-            <div class="feature-icon" style="background:#fee2e2;">🔑</div>
+            <div class="feature-label">Integration</div>
             <h4>Simple SDK</h4>
-            <p>One script tag, one public key. <code>Booking.create()</code>, <code>Booking.pay()</code>, done. Or use the drop-in widget.</p>
+            <p>One script tag, one public key. <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">Booking.create()</code>, done. Or use the drop-in widget.</p>
         </div>
         <div class="feature-card">
-            <div class="feature-icon" style="background:#f3e8ff;">👥</div>
+            <div class="feature-label">Team</div>
             <h4>Staff accounts</h4>
             <p>Add team members who can view bookings and mark attendance — without touching your API keys or settings.</p>
         </div>
         <div class="feature-card">
-            <div class="feature-icon" style="background:#ecfdf5;">📊</div>
+            <div class="feature-label">Analytics</div>
             <h4>Revenue dashboard</h4>
-            <p>See your earnings, paid bookings, and payment history.</p>
+            <p>See your earnings, paid bookings, and full payment history at a glance.</p>
         </div>
     </div>
 </section>
 
 <!-- How it works -->
 <section class="steps" id="how-it-works">
+    <div class="section-eyebrow">How it works</div>
     <h2>Up and running in minutes</h2>
-    <div class="steps-grid">
+
+    <div class="steps-list">
         <div class="step">
-            <div class="step-num">1</div>
+            <div class="step-num">01</div>
             <h4>Create your account</h4>
             <p>Sign up with your email and business name. Takes 30 seconds.</p>
         </div>
         <div class="step">
-            <div class="step-num">2</div>
+            <div class="step-num">02</div>
             <h4>Verify your identity</h4>
             <p>Submit your BVN and bank account. We verify via Paystack and create your subaccount instantly.</p>
         </div>
         <div class="step">
-            <div class="step-num">3</div>
+            <div class="step-num">03</div>
             <h4>Get your API key</h4>
             <p>Your live public key is issued immediately after verification.</p>
         </div>
         <div class="step">
-            <div class="step-num">4</div>
+            <div class="step-num">04</div>
             <h4>Start accepting payments</h4>
             <p>Add one script tag to your site. Every payment goes straight to your bank account.</p>
         </div>
@@ -633,38 +673,32 @@
 
 <!-- Pricing -->
 <section class="section" id="pricing">
-    <div style="text-align:center; margin-bottom:40px;">
-        <div class="section-label" style="display:inline-block;">Pricing</div>
-        <h2 style="max-width:100%; text-align:center;">Pay only when you earn</h2>
-        <p class="section-sub" style="max-width:400px; margin:12px auto 0;">
-            No monthly fees. No setup costs.
-        </p>
-    </div>
+    <div class="section-eyebrow">Pricing</div>
+    <h2>Pay only when you earn</h2>
+    <p class="section-sub">No monthly fees. No setup costs. A small percentage per transaction — that's it.</p>
 
-    <div class="pricing-card">
-        <div class="pricing-badge">Simple, transparent</div>
-        <ul class="pricing-features">
-            <li>Unlimited bookings</li>
-            <li>Paystack-powered checkout</li>
-            <li>Booking window controls</li>
-            <li>Staff accounts</li>
-            <li>Revenue dashboard</li>
-            <li>Webhook-verified payments</li>
-            <li>Drop-in widget included</li>
-        </ul>
+    <div class="pricing-wrap">
+        <div class="pricing-card">
+            <div class="pricing-header">
+                <div class="pricing-badge">Free to start</div>
+                <div class="pricing-headline">Simple, transparent pricing</div>
+                <div class="pricing-desc">Everything included. No tiers, no surprises.</div>
+            </div>
 
-        <a href="{{ route('register') }}" class="btn-pricing">Get started free →</a>
+            <ul class="pricing-features">
+                <li>Unlimited bookings</li>
+                <li>Paystack-powered checkout</li>
+                <li>Booking window controls</li>
+                <li>Staff accounts</li>
+                <li>Revenue dashboard</li>
+                <li>Webhook-verified payments</li>
+                <li>Drop-in widget included</li>
+            </ul>
+
+            <a href="{{ route('register') }}" class="btn-pricing">Get started free</a>
+        </div>
     </div>
 </section>
-
-<!-- CTA -->
-{{-- <section class="cta">
-    <h2>Ready to get paid?</h2>
-    <p>Create your account. Verify once. Start accepting bookings today.</p>
-    <a href="{{ route('register') }}" class="btn-hero-primary" style="display:inline-block;">
-        Create free account →
-    </a>
-</section> --}}
 
 <!-- Footer -->
 <footer>

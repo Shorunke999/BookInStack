@@ -129,22 +129,23 @@ class WebhookController extends Controller
 
     private function sendConfirmation(Booking $booking): void
     {
+        Log::info('in the send Confirmation method');
         // ── Send confirmation email ────────────────────────────────────
         try {
             Mail::to($booking->customer_email)
                 ->send(new BookingConfirmed($booking, $booking->developer));
-
+            Log::info('in the send booking Confirmed try-catch');
         } catch (\Exception $e) {
             Log::error("Failed to send confirmation email for {$booking->reference}", [
                 'error' => $e->getMessage(),
             ]);
         }
-        $phone = $booking->developer->sms_number ?? null;
+        $phone = $booking->service()->sms_number ?? null;
         // ── Send SMS alert ─────────────────────────────────────────────
         if (! $phone) {
             try {
                 $developer = $booking->developer;
-
+                 Log::info('in the phone sms try-catch');
                 app(EBulkSmsAlertService::class)->sendCreditAlert($phone, [
                     'business_name'  => $developer->business_name ?? $developer->name,
                     'account_number' => $developer->account_number ?? '0000000000',

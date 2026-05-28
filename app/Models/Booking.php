@@ -41,7 +41,19 @@ class Booking extends Model
         'booked_via',
         'booking_expires_at',
         'attended_by_id',
-        'payment_link_token'
+        'payment_link_token',
+        'service_id',
+        'payment_method',
+
+        'anchor_virtual_account_number', 'anchor_va_bank_name', 'anchor_va_account_name',
+        'anchor_va_reference', 'anchor_va_expires_at', 'anchor_payin_ref',
+        'anchor_session_id', 'paid_at',
+
+        'risk_score',
+        'risk_level',
+        'risk_reasons',
+        'flagged_at',
+        'ip_address',
 
     ];
 
@@ -54,7 +66,9 @@ class Booking extends Model
         'check_in' => 'date',
         'check_out' => 'date',
         'preferred_date' => 'date',
-
+        'anchor_va_expires_at' => 'datetime',
+        'risk_reasons' => 'array',
+        'flagged_at' => 'datetime',
     ];
 
     // Auto-generate reference on create
@@ -81,6 +95,10 @@ class Booking extends Model
     public function payment()
     {
         return $this->hasOne(Payment::class);
+    }
+    public function service()
+    {
+        return $this->belongsTo(\App\Models\Service::class);
     }
 
     // Relations

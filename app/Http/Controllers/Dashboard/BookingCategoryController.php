@@ -4,25 +4,27 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Models\BookingCategory;
+use App\Models\Service;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+
 
 class BookingCategoryController extends Controller
 {
     // ── Store (POST /settings/categories) ─────────────────────────────────────
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, Service $service): RedirectResponse
     {
-        $developer = auth()->user();
-        $mode      = $developer->booking_mode;
+       $this->authoriseService($service);
 
+        $mode = $service->booking_mode;
         $data = $this->validated($request, $mode);
 
-        $developer->bookingCategories()->create([
+        $service->bookingCategories()->create([
             ...$data,
+            'developer_id' => $service->developer_id,
             'booking_mode' => $mode,
-            'sort_order'   => $developer->bookingCategories()
-                                ->forMode($mode)->max('sort_order') + 1,
+            'sort_order'   => $service->bookingCategories()->max('sort_order') + 1,
         ]);
 
         return back()->with('success', 'Category added.');
@@ -30,51 +32,54 @@ class BookingCategoryController extends Controller
 
     // ── Update (PUT /settings/categories/{category}) ───────────────────────────
 
-    public function update(Request $request, BookingCategory $category): RedirectResponse
+    public function update(Request $request,Service $service, BookingCategory $category): RedirectResponse
     {
-        $this->authorise($category);
-        $mode = $category->booking_mode;
+        $this->authoriseService($service);
+        $this->authoriseCategory($category, $service);
 
-        $category->update($this->validated($request, $mode));
+        $category->update($this->validated($request, $service->booking_mode));
 
         return back()->with('success', 'Category updated.');
     }
 
     // ── Toggle status (PATCH /settings/categories/{category}/toggle) ──────────
 
-    public function toggle(BookingCategory $category): RedirectResponse
+    public function toggle(Service $service, BookingCategory $category): RedirectResponse
     {
-        $this->authorise($category);
+        $this->authoriseService($service);
+        $this->authoriseCategory($category, $service);
 
         $category->update([
             'status' => $category->status === 'active' ? 'inactive' : 'active',
         ]);
-
         return back()->with('success', 'Category ' . $category->status . '.');
     }
 
     // ── Destroy (DELETE /settings/categories/{category}) ──────────────────────
 
-    public function destroy(BookingCategory $category): RedirectResponse
+    public function destroy(Service $service, BookingCategory $category): RedirectResponse
     {
-        $this->authorise($category);
-        $category->delete();
+        $this->authoriseService($service);
+        $this->authoriseCategory($category, $service);
 
+        $category->delete();
         return back()->with('success', 'Category removed.');
     }
 
     // ── Reorder (POST /settings/categories/reorder) ────────────────────────────
 
-    public function reorder(Request $request): RedirectResponse
+    public function reorder(Request $request,Service $service): RedirectResponse
     {
-        $developer = auth()->user();
-        $order     = $request->input('order', []);
+        $this->authoriseService($service);
+
+        $order = $request->input('order', []);
 
         foreach ($order as $index => $id) {
-            $developer->bookingCategories()
-                ->where('id', $id)
-                ->update(['sort_order' => $index]);
+            $service->bookingCategories()
+                    ->where('id', $id)
+                    ->update(['sort_order' => $index]);
         }
+
 
         return back();
     }
@@ -115,6 +120,15 @@ class BookingCategoryController extends Controller
         return $request->validate($rules);
     }
 
+     private function authoriseService(Service $service): void
+    {
+        abort_if($service->developer_id !== auth()->id(), 403);
+    }
+
+    private function authoriseCategory(BookingCategory $category, Service $service): void
+    {
+        abort_if($category->service_id !== $service->id, 403);
+    }
     private function authorise(BookingCategory $category): void
     {
         $developer = auth()->user();

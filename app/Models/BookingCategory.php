@@ -9,11 +9,11 @@ class BookingCategory extends Model
 {
 
     protected $fillable = [
-         'developer_id', 'booking_mode', 'name', 'description',
+        'developer_id', 'booking_mode', 'name', 'description',
         'price', 'fixed_price', 'min_price', 'max_price',
         'child_price', 'duration_minutes', 'capacity',
         'enable_child_pricing', 'max_per_order', 'total_slots',
-        'sort_order', 'status',
+        'sort_order', 'status','service_id',
 
           // Check-in window
         'checkin_start_date', 'checkin_end_date',
@@ -30,9 +30,9 @@ class BookingCategory extends Model
         'max_price'            => 'integer',
 
          'checkin_start_date'   => 'date',
-    'checkin_end_date'     => 'date',
-    'checkin_days_before'  => 'integer',
-    'checkin_days_after'   => 'integer',
+        'checkin_end_date'     => 'date',
+        'checkin_days_before'  => 'integer',
+        'checkin_days_after'   => 'integer',
     ];
 
     // ── Relationships ──────────────────────────────────────────────────────────
@@ -45,6 +45,11 @@ class BookingCategory extends Model
     public function bookings()
     {
         return $this->hasMany(Booking::class, 'category_id');
+    }
+
+    public function service()
+    {
+        return $this->belongsTo(\App\Models\Service::class);
     }
 
     // ── Scopes ─────────────────────────────────────────────────────────────────
@@ -139,5 +144,12 @@ class BookingCategory extends Model
     {
         if ($this->total_slots === null) return false;
         return $this->slotsBooked() >= $this->total_slots;
+    }
+    /**
+     * Scope to a specific service.
+     */
+    public function scopeForService($query, int $serviceId)
+    {
+        return $query->where('service_id', $serviceId);
     }
 }

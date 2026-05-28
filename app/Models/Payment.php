@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Payment extends Model
 {
@@ -34,6 +35,21 @@ class Payment extends Model
         'paystack_fee' => 'float',
     ];
 
+protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($payment) {
+            if (empty($payment->paystack_reference)) {
+                $payment->paystack_reference = self::generateReference();
+            }
+        });
+    }
+
+    public static function generateReference(): string
+    {
+        return 'PSK-' . strtoupper(Str::random(16));
+    }
     // ─── Relationships ──────────────────────────────────────────────────────────
 
     public function booking()

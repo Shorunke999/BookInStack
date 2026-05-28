@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Models\Payment;
-use App\Models\PaymentLink;
 use App\Services\PaystackService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -35,42 +34,57 @@ class PaymentController extends Controller
             ->where('status', 'pending')
             ->firstOrFail();
 
-        try {
-            $split = $this->paystack->calculateSplit((int) $booking->amount * 100, $developer);
-            $transaction = $this->paystack->initializeTransaction([
-                'customer_email' => $booking->customer_email,
-                'amount' => (int) $booking->amount * 100,
-                'reference' => 'PAY-'.$booking->reference.'-'.time(),
-                'booking_id' => $booking->id,
-                'developer_id' => $developer->id,
-                'booking_reference' => $booking->reference,
-                'description' => $booking->description,
-                'subaccount_code' => $developer->paystack_subaccount_code,
-                'transaction_charge' => max($split['platform_fee'],$split['paystack_fee']), // ensure we cover Paystack fee
-                'callback_url' => $data['callback_url'] ?? null,
-            ]);
-
-            // Store the Paystack reference on the booking
-            $booking->update([
-                'paystack_reference' => $transaction['reference'],
-                'paystack_access_code' => $transaction['access_code'],
-                'payment_url' => $transaction['authorization_url'],
-            ]);
-
+        // Idempotency — if virtual account already generated and not expired, return it
+        if ($booking->anchor_virtual_account_number && $booking->anchor_va_expires_at?->isFuture()) {
             return response()->json([
-                'access_code' => $transaction['access_code'],
-                'authorization_url' => $transaction['authorization_url'],
-                'reference' => $transaction['reference'],
+                'account_number' => $booking->anchor_virtual_account_number,
+                'bank_name'      => $booking->anchor_va_bank_name,
+                'account_name'   => $booking->anchor_va_account_name,
+                'amount'         => $booking->amount,
+                'expires_at'     => $booking->anchor_va_expires_at,
+                'reference'      => $booking->reference,
             ]);
-
-        } catch (\Exception $e) {
-            Log::error('Payment initialization failed', [
-                'booking' => $booking->reference,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json(['message' => 'Payment initialization failed'], 500);
         }
+
+       try {
+        $amountKobo = (int) $booking->amount * 100;
+
+        $virtualAccount = app(\App\Services\AnchorService::class)->createPayWithTransfer(
+            bookingReference: $booking->reference,
+            amountKobo:       $amountKobo,
+            customerName:     $booking->customer_name,
+            customerEmail:    $booking->customer_email,
+            expirySeconds:    1800,  // 30 minutes
+        );
+
+        $attrs = $virtualAccount['attributes'];
+
+        // Store virtual account details on the booking
+        $booking->update([
+            'anchor_virtual_account_number' => $attrs['accountNumber'],
+            'anchor_va_bank_name'           => $attrs['bank']['name'],
+            'anchor_va_account_name'        => $attrs['accountName'],
+            'anchor_va_reference'           => $attrs['reference'],
+            'anchor_va_expires_at'          => now()->addSeconds(1800),
+        ]);
+
+        return response()->json([
+            'account_number' => $attrs['accountNumber'],
+            'bank_name'      => $attrs['bank']['name'],
+            'account_name'   => $attrs['accountName'],
+            'amount'         => $booking->amount,
+            'expires_at'     => now()->addSeconds(1800),
+            'reference'      => $booking->reference,
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Payment initialization failed', [
+            'booking' => $booking->reference,
+            'error'   => $e->getMessage(),
+        ]);
+
+        return response()->json(['message' => 'Payment initialization failed.'], 500);
+    }
     }
 
     /**
@@ -150,11 +164,11 @@ class PaymentController extends Controller
         Log::info("Payment record created for booking {$booking->reference}");
             // Update booking status
             $booking->markAsPaid();
-            $token = $booking->payment_link_token;
-            if ($token) {
-                PaymentLink::where('token', $token)->update(['status' => 'paid', 'booking_id' => $booking->id]);
-            }
-            Log::info("Booking {$booking->reference} marked as paid : {$booking->status}");
+            // $token = $booking->payment_link_token;
+            // if ($token) {
+            //     PaymentLink::where('token', $token)->update(['status' => 'paid', 'booking_id' => $booking->id]);
+            // }
+            // Log::info("Booking {$booking->reference} marked as paid : {$booking->status}");
         });
     }
 }

@@ -6,231 +6,298 @@
     <title>@yield('title', 'Sign In') — BookInStack</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        body {
-            font-family: 'DM Sans', sans-serif;
-            min-height: 100vh;
-            display: flex;
+        :root {
+            --ink:      #0f1117;
+            --ink-mid:  #3a3f52;
+            --muted:    #7e8599;
+            --border:   #e8eaef;
+            --surface:  #f5f6f8;
+            --accent:   #2563eb;
+            --accent-h: #1d4ed8;
+            --green:    #059669;
+            --white:    #ffffff;
         }
 
-        /* ── Left panel — brand ───────────────────────────────── */
+        body {
+            font-family: 'Sora', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── Left panel ──────────────────────────────────────── */
         .auth-left {
             flex: 1;
-            background: #0d0d14;
+            background: var(--ink);
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 40px;
-            position: relative;
+            padding: 44px 48px;
+            position: sticky;
+            top: 0;
+            height: 100vh;
             overflow: hidden;
         }
 
-        /* Gradient orbs */
-        .auth-left::before, .auth-left::after {
+        /* Subtle grid */
+        .auth-left::before {
             content: '';
             position: absolute;
-            border-radius: 50%;
-            filter: blur(70px);
-            opacity: .3;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+            background-size: 48px 48px;
             pointer-events: none;
         }
 
-        .auth-left::before {
-            width: 420px; height: 420px;
-            background: radial-gradient(circle, #4f46e5, transparent);
-            top: -80px; left: -80px;
-        }
-
+        /* Single glow */
         .auth-left::after {
-            width: 320px; height: 320px;
-            background: radial-gradient(circle, #7c3aed, transparent);
-            bottom: -60px; right: -60px;
+            content: '';
+            position: absolute;
+            width: 480px; height: 480px;
+            background: radial-gradient(circle, rgba(37,99,235,.16) 0%, transparent 70%);
+            top: -80px; right: -80px;
+            pointer-events: none;
         }
 
-        .auth-left-inner { position: relative; z-index: 1; }
+        .auth-left-inner {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            justify-content: space-between;
+        }
 
         .auth-logo {
-            font-size: 22px;
-            font-weight: 800;
+            font-size: 17px;
+            font-weight: 700;
             color: #fff;
-            letter-spacing: -.4px;
+            letter-spacing: -.3px;
             text-decoration: none;
             display: block;
-            margin-bottom: 60px;
         }
 
-        .auth-logo span { color: #818cf8; }
+        .auth-logo span { color: var(--accent); }
 
-        .auth-tagline {
-            flex: 1;
+        /* Main copy block */
+        .auth-copy { margin-top: 56px; }
+
+        .auth-eyebrow {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,.3);
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .auth-tagline h2 {
-            font-size: clamp(26px, 3vw, 36px);
-            font-weight: 800;
+        .auth-eyebrow::before {
+            content: '';
+            display: block;
+            width: 18px;
+            height: 1px;
+            background: var(--accent);
+        }
+
+        .auth-copy h2 {
+            font-size: clamp(24px, 2.8vw, 34px);
+            font-weight: 700;
             color: #fff;
-            line-height: 1.15;
-            letter-spacing: -.03em;
+            line-height: 1.1;
+            letter-spacing: -.04em;
             margin-bottom: 14px;
         }
 
-        .auth-tagline h2 span {
-            background: linear-gradient(135deg, #818cf8, #c084fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .auth-copy h2 em {
+            font-style: normal;
+            color: transparent;
+            -webkit-text-stroke: 1px rgba(255,255,255,.3);
         }
 
-        .auth-tagline p {
-            font-size: 15px;
-            color: #64748b;
-            line-height: 1.65;
-            max-width: 340px;
-        }
-
-        /* Code snippet on the left panel */
-        .auth-code {
-            margin-top: 40px;
-            background: rgba(255,255,255,.04);
-            border: 1px solid rgba(255,255,255,.07);
-            border-radius: 12px;
-            padding: 18px 20px;
-        }
-
-        .auth-code pre {
-            font-family: 'DM Mono', monospace;
-            font-size: 12px;
+        .auth-copy p {
+            font-size: 14px;
+            color: rgba(255,255,255,.35);
             line-height: 1.7;
-            color: #cdd6f4;
+            max-width: 320px;
         }
 
-        .kw  { color: #cba6f7; }
-        .str { color: #a6e3a1; }
-        .fn  { color: #89dceb; }
-        .cm  { color: #45475a; }
-        .nm  { color: #fab387; }
-
-        /* Testimonial / stat strip */
-        .auth-stats {
+        /* Feature points */
+        .auth-points {
             display: flex;
-            gap: 24px;
-            padding-top: 40px;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 36px;
+            padding-top: 32px;
+            border-top: 1px solid rgba(255,255,255,.06);
+        }
+
+        .auth-point {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            font-size: 13px;
+            color: rgba(255,255,255,.45);
+            line-height: 1.5;
+        }
+
+        .auth-point-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--accent);
+            flex-shrink: 0;
+            margin-top: 5px;
+        }
+
+        /* Bottom stats */
+        .auth-stats {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            gap: 32px;
+            padding-top: 28px;
             border-top: 1px solid rgba(255,255,255,.06);
             flex-wrap: wrap;
         }
 
         .auth-stat .num {
-            font-size: 22px;
-            font-weight: 800;
+            font-size: 20px;
+            font-weight: 700;
             color: #fff;
             letter-spacing: -.04em;
         }
 
         .auth-stat .lbl {
-            font-size: 12px;
-            color: #475569;
-            margin-top: 2px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            color: rgba(255,255,255,.25);
+            margin-top: 3px;
+            letter-spacing: .05em;
+            text-transform: uppercase;
         }
 
-        /* ── Right panel — form ───────────────────────────────── */
+        /* ── Right panel ─────────────────────────────────────── */
         .auth-right {
-            width: 560px;
+            width: 520px;
             flex-shrink: 0;
-            background: #fff;
+            background: var(--white);
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 40px;
+            padding: 48px 44px;
             overflow-y: auto;
+            border-left: 1px solid var(--border);
         }
 
-        .auth-form-wrap { width: 100%; max-width: 360px; }
+        .auth-form-wrap {
+            width: 100%;
+            max-width: 360px;
+        }
 
         .auth-form-wrap h1 {
-            font-size: 24px;
-            font-weight: 800;
-            color: #0d0d14;
-            letter-spacing: -.03em;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--ink);
+            letter-spacing: -.035em;
             margin-bottom: 6px;
         }
 
         .auth-form-wrap .subtitle {
-            font-size: 14px;
-            color: #64748b;
-            margin-bottom: 28px;
-            line-height: 1.5;
+            font-size: 13.5px;
+            color: var(--muted);
+            margin-bottom: 32px;
+            line-height: 1.55;
         }
 
-         .auth-footer {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 14px;
-            color: #64748b;
-        }
- 
-        .auth-footer a { color: #4f46e5; font-weight: 500; text-decoration: none; }
-        .auth-footer a:hover { text-decoration: underline; }
         /* Form fields */
         .form-group { margin-bottom: 16px; }
 
         .form-group label {
             display: block;
-            font-size: 13px;
-            font-weight: 500;
-            color: #0d0d14;
-            margin-bottom: 6px;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--ink);
+            margin-bottom: 7px;
+            letter-spacing: -.01em;
         }
 
         .form-control {
             width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 14px;
-            font-family: 'DM Sans', sans-serif;
-            color: #0d0d14;
+            padding: 10px 13px;
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            font-size: 13.5px;
+            font-family: 'Sora', sans-serif;
+            color: var(--ink);
             outline: none;
             transition: border-color .15s, box-shadow .15s;
-            background: #fff;
+            background: var(--white);
         }
 
         .form-control:focus {
-            border-color: #4f46e5;
-            box-shadow: 0 0 0 3px rgba(79,70,229,.1);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(37,99,235,.1);
         }
 
-        .field-error { color: #dc2626; font-size: 12px; margin-top: 4px; }
+        .field-error {
+            color: #dc2626;
+            font-size: 11.5px;
+            margin-top: 4px;
+        }
 
         .btn-submit {
             width: 100%;
             padding: 11px;
-            background: #4f46e5;
+            background: var(--ink);
             color: #fff;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
             border: none;
-            border-radius: 8px;
+            border-radius: 7px;
             cursor: pointer;
-            font-family: 'DM Sans', sans-serif;
-            transition: all .15s;
+            font-family: 'Sora', sans-serif;
+            letter-spacing: -.01em;
+            transition: background .15s;
             margin-top: 4px;
         }
 
-        .btn-submit:hover { background: #4338ca; }
+        .btn-submit:hover { background: #1a1f2e; }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13.5px;
+            color: var(--muted);
+        }
+
+        .auth-footer a {
+            color: var(--accent);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .auth-footer a:hover { text-decoration: underline; }
 
         .auth-switch {
             text-align: center;
             margin-top: 20px;
-            font-size: 14px;
-            color: #64748b;
+            font-size: 13.5px;
+            color: var(--muted);
         }
 
         .auth-switch a {
-            color: #4f46e5;
+            color: var(--accent);
             font-weight: 600;
             text-decoration: none;
         }
@@ -239,14 +306,14 @@
 
         .alert {
             padding: 11px 13px;
-            border-radius: 8px;
-            font-size: 14px;
+            border-radius: 7px;
+            font-size: 13.5px;
             margin-bottom: 16px;
             line-height: 1.5;
         }
 
         .alert-error   { background: #fee2e2; color: #dc2626; }
-        .alert-success { background: #dcfce7; color: #15803d; }
+        .alert-success { background: #ecfdf5; color: #065f46; }
 
         .form-row {
             display: grid;
@@ -258,92 +325,112 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            margin: 18px 0;
-            color: #94a3b8;
+            margin: 20px 0;
+            color: var(--muted);
             font-size: 12px;
         }
 
         .divider::before, .divider::after {
             content: '';
             flex: 1;
-            border-top: 1px solid #e2e8f0;
+            border-top: 1px solid var(--border);
         }
 
-        /* ── Responsive ── hide left panel on small screens ───── */
+        /* Mobile logo */
+        .mobile-logo {
+            display: none;
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--ink);
+            text-decoration: none;
+            letter-spacing: -.3px;
+            margin-bottom: 32px;
+        }
+
+        .mobile-logo span { color: var(--accent); }
+
+        /* ── Responsive ──────────────────────────────────────── */
         @media (max-width: 768px) {
             .auth-left  { display: none; }
             .auth-right {
                 width: 100%;
-                padding: 32px 24px;
+                padding: 40px 24px;
                 align-items: flex-start;
-                padding-top: 60px;
+                border-left: none;
             }
+            .mobile-logo { display: block; }
         }
     </style>
 </head>
 <body>
 
-<!-- ── Left brand panel ──────────────────────────────────────────────────── -->
+<!-- Left brand panel -->
 <div class="auth-left">
     <div class="auth-left-inner">
-        <a href="{{ url('/') }}" class="auth-logo">BookIn<span>Stack</span></a>
 
-        <div class="auth-tagline">
-            <h2>Take bookings.<br /><span>Get paid instantly.</span></h2>
-            <p>
-                BookInStack gives your business a complete booking and payment system.
-                Set up once, earn every time a customer books.
-            </p>
+        <div>
+            <a href="{{ url('/') }}" class="auth-logo">BookIn<span>Stack</span></a>
 
-            <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px;">
-                @foreach([
-                    ['💳','Payments straight to your bank account'],
-                    ['📋','Manage all bookings from one simple dashboard'],
-                    ['🎟','QR tickets, staff check-in, attendance tracking'],
-                    ['💬','Let customers negotiate price via WhatsApp'],
-                ] as [$icon,$text])
-                <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;background:rgba(255,255,255,.07);border-radius:9px;border:1px solid rgba(255,255,255,.1);">
-                    <span style="font-size:18px;flex-shrink:0;">{{ $icon }}</span>
-                    <span style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.4;">{{ $text }}</span>
+            <div class="auth-copy">
+                <div class="auth-eyebrow">For Nigerian Businesses</div>
+                <h2>
+                    Take bookings.<br>
+                    <em>Get paid instantly.</em>
+                </h2>
+                <p>
+                    A complete booking and payment system for your business.
+                    Set up once, earn every time a customer books.
+                </p>
+
+                <div class="auth-points">
+                    <div class="auth-point">
+                        <div class="auth-point-dot"></div>
+                        <span>Payments straight to your bank account</span>
+                    </div>
+                    <div class="auth-point">
+                        <div class="auth-point-dot"></div>
+                        <span>Manage all bookings from one simple dashboard</span>
+                    </div>
+                    <div class="auth-point">
+                        <div class="auth-point-dot"></div>
+                        <span>QR tickets, staff check-in, attendance tracking</span>
+                    </div>
+                    <div class="auth-point">
+                        <div class="auth-point-dot"></div>
+                        <span>Let customers negotiate price via WhatsApp</span>
+                    </div>
                 </div>
-                @endforeach
             </div>
         </div>
-    </div>
 
-    <div class="auth-stats">
-        <div class="auth-stat">
-            <div class="num">₦0</div>
-            <div class="lbl">Monthly fee</div>
+        <div class="auth-stats">
+            <div class="auth-stat">
+                <div class="num">₦0</div>
+                <div class="lbl">Monthly fee</div>
+            </div>
+            <div class="auth-stat">
+                <div class="num">~60s</div>
+                <div class="lbl">To go live</div>
+            </div>
+            <div class="auth-stat">
+                <div class="num">95%</div>
+                <div class="lbl">Goes to you</div>
+            </div>
         </div>
-        <div class="auth-stat">
-            <div class="num">5min</div>
-            <div class="lbl">To go live</div>
-        </div>
+
     </div>
 </div>
 
-<!-- ── Right form panel ──────────────────────────────────────────────────── -->
+<!-- Right form panel -->
 <div class="auth-right">
     <div class="auth-form-wrap">
 
-        {{-- Back to home on mobile (since left panel is hidden) --}}
-        <div style="margin-bottom:28px; display:none;" class="mobile-back">
-            <a href="{{ url('/') }}" style="font-size:20px; font-weight:800; color:#0d0d14; text-decoration:none; letter-spacing:-.3px;">
-                BookIn<span style="color:#4f46e5;">Stack</span>
-            </a>
-        </div>
+        <a href="{{ url('/') }}" class="mobile-logo">BookIn<span>Stack</span></a>
 
         @yield('content')
 
     </div>
 </div>
-
-<style>
-    @media (max-width: 768px) {
-        .mobile-back { display: block !important; }
-    }
-</style>
 
 </body>
 </html>

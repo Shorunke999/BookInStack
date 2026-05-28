@@ -161,7 +161,7 @@
         <div class="card">
             <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;">Payment</div>
             @php
-                $bookingAmount = $booking->amount * ($booking->nights() ?? 1);
+                $bookingAmount = $booking->amount;
                 $feePct      = $developer->platform_fee_percent ?? 5;
                 $platformFee = (int) round(($bookingAmount * $feePct) /100 );
                 $devShare    = $bookingAmount - $platformFee;
@@ -257,6 +257,10 @@
                         <span style="color:var(--muted);">Customer (self-service)</span>
                     </div>
                 @endif
+                 <div style="display:flex;gap:10px;">
+                    <span style="color:var(--muted);min-width:80px;">Method</span>
+                    <span>{{ strtoupper($booking->payment_method) }}</span>
+                </div>
                 <div style="display:flex;gap:10px;">
                     <span style="color:var(--muted);min-width:80px;">Account</span>
                     <span>{{ $developer->business_name ?? $developer->name }}</span>
@@ -271,6 +275,61 @@
             <div id="booking-qr" style="display:inline-block;padding:10px;border:1px solid var(--border);border-radius:10px;background:#fff;"></div>
             <div style="font-family:monospace;font-size:11px;color:var(--muted);margin-top:8px;">{{ $booking->reference }}</div>
         </div>
+        @endif
+
+       @if($booking->status !== 'paid' && $booking->payment_link_token)
+
+            @php
+                $wa = preg_replace('/\D/', '', $booking->customer_phone ?? '');
+
+                $text = urlencode(
+                    "Hi {$booking->customer_name}, complete your payment here: "
+                    . route('payment.link', $booking->payment_link_token)
+                );
+
+                $whatsappUrl = $wa
+                    ? "https://wa.me/{$wa}?text={$text}"
+                    : "https://wa.me/?text={$text}";
+            @endphp
+
+            <div class="card" style="text-align:center;">
+
+                <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;">
+                    Payment
+                </div>
+
+                <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
+
+                    <a
+                        href="{{ route('payment.link', $booking->payment_link_token) }}"
+                        target="_blank"
+                        class="btn btn-primary btn-sm"
+                    >
+                        Make Payment →
+                    </a>
+
+                    @if($booking->customer_phone)
+
+                        <a
+                            href="{{ $whatsappUrl }}"
+                            target="_blank"
+                            class="btn btn-outline btn-sm"
+                            style="display:inline-flex;align-items:center;gap:7px;"
+                        >
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="opacity:.7;flex-shrink:0;">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                                <path d="M12 0C5.373 0 0 5.373 0 12c0 2.122.554 4.112 1.523 5.84L.057 23.272a.75.75 0 0 0 .919.899l5.516-1.445A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.956 9.956 0 0 1-5.14-1.424l-.368-.218-3.813 1 1.024-3.741-.238-.382A9.955 9.955 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
+                            </svg>
+
+                            Share via WhatsApp
+                        </a>
+
+                    @endif
+
+                </div>
+
+            </div>
+
         @endif
 
     </div>

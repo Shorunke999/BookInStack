@@ -16,8 +16,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'public.key' => \App\Http\Middleware\VerifyPublicKey::class,
             'admin' => \App\Http\Middleware\EnsureIsAdmin::class,
             'superadmin' => \App\Http\Middleware\SuperAdmin::class,
+            'onboarded' => \App\Http\Middleware\OnboardingComplete::class,
+            'fraud.detect' => \App\Http\Middleware\FraudDetectionMiddleware::class,
         ]);
-
+        $middleware->validateCsrfTokens(except: [
+            'webhooks/anchor'
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

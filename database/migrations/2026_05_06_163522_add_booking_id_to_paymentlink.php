@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::table('payment_links', function (Blueprint $table) {
             $table->unsignedBigInteger('booking_id')->nullable()->after('id');
         });
+
     }
 
     /**

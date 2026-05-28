@@ -5,29 +5,38 @@
 @section('content')
 
 {{-- ── Mode + slot indicators ───────────────────────────────────────────────── --}}
-<div style="display:flex; align-items:center; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
-    <span style="
-        display:inline-flex; align-items:center; gap:6px;
-        background:var(--accent-light); color:var(--accent);
-        font-size:12px; font-weight:700; padding:5px 12px; border-radius:20px;
-    ">{{ match($modeConfig['mode']) { 'ticket'=>'🎟', 'reservation'=>'🏨', default=>'🗓' } }}
-    {{ $modeConfig['label'] }} Mode</span>
 
-    <span style="font-size:13px; color:var(--muted);">
-        {{ number_format($bookings->total()) }} {{ strtolower($modeConfig['plural']) }}
-    </span>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
 
-    @foreach($categories as $cat)
-        @if($cat->total_slots !== null)
-            @php $rem = $cat->slotsRemaining(); $pct = $cat->total_slots > 0 ? round(($cat->slotsBooked() / $cat->total_slots) * 100) : 0; @endphp
-            <span style="
-                font-size:12px; font-weight:600; padding:4px 11px; border-radius:20px;
-                {{ $rem === 0 ? 'background:#fef2f2;color:#ef4444;' : ($pct >= 80 ? 'background:#fffbeb;color:#d97706;' : 'background:#f0fdf4;color:#15803d;') }}
-            ">{{ $cat->name }}: {{ $rem === 0 ? 'Full' : $rem . ' slot' . ($rem === 1 ? '' : 's') . ' left' }}</span>
-        @endif
-    @endforeach
+    {{-- Left: mode badge + slot indicators --}}
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="
+            display:inline-flex;align-items:center;gap:6px;
+            background:var(--accent-light);color:var(--accent);
+            font-size:12px;font-weight:700;padding:5px 12px;border-radius:20px;
+        ">{{ match($modeConfig['mode']) { 'ticket'=>'🎟', 'reservation'=>'🏨', default=>'🗓' } }}
+        {{ $modeConfig['label'] }} Mode</span>
+
+        <span style="font-size:13px;color:var(--muted);">
+            {{ number_format($bookings->total()) }} {{ strtolower($modeConfig['plural']) }}
+        </span>
+
+        @foreach($categories as $cat)
+            @if($cat->total_slots !== null)
+                @php $rem = $cat->slotsRemaining(); $pct = $cat->total_slots > 0 ? round(($cat->slotsBooked() / $cat->total_slots) * 100) : 0; @endphp
+                <span style="
+                    font-size:12px;font-weight:600;padding:4px 11px;border-radius:20px;
+                    {{ $rem === 0 ? 'background:#fef2f2;color:#ef4444;' : ($pct >= 80 ? 'background:#fffbeb;color:#d97706;' : 'background:#f0fdf4;color:#15803d;') }}
+                ">{{ $cat->name }}: {{ $rem === 0 ? 'Full' : $rem . ' slot' . ($rem === 1 ? '' : 's') . ' left' }}</span>
+            @endif
+        @endforeach
+    </div>
+
+    {{-- Right: create button --}}
+        <a href="{{ route('bookings.create') }}" class="btn btn-primary btn-sm" style="white-space:nowrap;">
+            + New Booking
+        </a>
 </div>
-
 {{-- ── Filters ──────────────────────────────────────────────────────────────── --}}
 <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:16px;">
 
@@ -67,6 +76,7 @@
     </form>
 </div>
 
+
 {{-- ════════════════════════════════════════════════════════
      APPOINTMENT TABLE
 ════════════════════════════════════════════════════════ --}}
@@ -85,7 +95,7 @@
                     <th>Status</th>
                     <th>Attended</th>
                     <th class="hide-mobile">Booked On</th>
-                    @if(auth()->user()->isAdmin()) <th></th> @endif
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -116,7 +126,14 @@
                     <td style="font-weight:700; font-size:13px; white-space:nowrap;">
                         ₦{{ number_format($b->amount , 2) }}
                     </td>
-                    <td>@include('components.status-badge', ['status' => $b->status])</td>
+                    <td>@include('components.status-badge', ['status' => $b->status])
+                         {{-- Show VA badge if transfer pending and VA not expired --}}
+                        @if($b->status === 'pending' && $b->anchor_virtual_account_number && $b->anchor_va_expires_at?->isFuture())
+                            <div style="margin-top:4px;font-size:10px;font-weight:700;color:#7c3aed;background:#f5f3ff;padding:2px 7px;border-radius:10px;display:inline-block;">
+                                🏦 VA Active
+                            </div>
+                        @endif
+                    </td>
                     <td>
                         @if($b->status === 'paid')
                             @if($b->attended)
@@ -136,7 +153,7 @@
                         {{ $b->created_at->format('d M Y') }}
                         <div style="color:var(--muted);">{{ $b->created_at->format('H:i') }}</div>
                     </td>
-                    @if(auth()->user()->isAdmin())
+
                         <td>
                             @if($b->attended)
                                 <form method="POST" action="{{ route('bookings.attend', $b->reference) }}" style="margin:0;">
@@ -149,7 +166,7 @@
                                 View
                             </a>
                         </td>
-                    @endif
+
                 </tr>
                 @empty
                 <tr><td colspan="10" style="text-align:center; padding:48px; color:var(--muted); font-size:14px;">
@@ -189,7 +206,7 @@
                     <th>Status</th>
                     <th>Checked In</th>
                     <th class="hide-mobile">Booked On</th>
-                    @if(auth()->user()->isAdmin()) <th></th> @endif
+                     <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -251,7 +268,6 @@
                         {{ $b->created_at->format('d M Y') }}
                         <div style="color:var(--muted);">{{ $b->created_at->format('H:i') }}</div>
                     </td>
-                    @if(auth()->user()->isAdmin())
                         <td>
                             @if($b->attended)
                                 <form method="POST" action="{{ route('bookings.attend', $b->reference) }}" style="margin:0;">
@@ -264,7 +280,6 @@
                                 View
                             </a>
                         </td>
-                    @endif
                 </tr>
                 @empty
                 <tr><td colspan="10" style="text-align:center; padding:48px; color:var(--muted); font-size:14px;">
@@ -305,14 +320,14 @@
                     <th>Status</th>
                     <th>Checked Out</th>
                     <th class="hide-mobile">Booked On</th>
-                    @if(auth()->user()->isAdmin()) <th></th> @endif
+                     <th></th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($bookings as $b)
                 @php
                     $nights = $b->nights() ?? 1;
-                    $total  = $b->amount * $nights;
+                    $total  = $b->amount;
                 @endphp
                 <tr>
                     <td class="mono" style="font-size:11px;">
@@ -377,7 +392,6 @@
                         {{ $b->created_at->format('d M Y') }}
                         <div style="color:var(--muted);">{{ $b->created_at->format('H:i') }}</div>
                     </td>
-                    @if(auth()->user()->isAdmin())
                         <td>
                             @if($b->attended)
                                 <form method="POST" action="{{ route('bookings.attend', $b->reference) }}" style="margin:0;">
@@ -390,7 +404,6 @@
                                 View
                             </a>
                         </td>
-                    @endif
                 </tr>
                 @empty
                 <tr><td colspan="11" style="text-align:center; padding:48px; color:var(--muted); font-size:14px;">
@@ -479,6 +492,11 @@
       attendance_note:'{{ $b->attendance_note ?? '' }}',
       created_at:     '{{ $b->created_at->format('d M Y, H:i') }}',
       paid_at:        '{{ $b->paid_at?->format('d M Y, H:i') ?? '' }}',
+       va_number:   '{{ $b->anchor_virtual_account_number ?? '' }}',
+    va_bank:     '{{ $b->anchor_va_bank_name ?? '' }}',
+    va_name:     '{{ $b->anchor_va_account_name ?? '' }}',
+    va_expires:  '{{ $b->anchor_va_expires_at?->format('d M Y, H:i') ?? '' }}',
+    va_active:   {{ ($b->anchor_virtual_account_number && $b->anchor_va_expires_at?->isFuture()) ? 'true' : 'false' }},
       @if($modeConfig['mode'] === 'appointment')
       preferred_date: '{{ $b->preferred_date?->format('d M Y') ?? '—' }}',
       preferred_time: '{{ $b->preferred_time ? \Carbon\Carbon::parse($b->preferred_time)->format('g:i A') : '—' }}',
@@ -555,6 +573,24 @@
     if (b.paid_at) html += row('Paid at', b.paid_at);
     html += row('Booked on', b.created_at);
 
+      if (b.va_active) {
+        html += `<div class="detail-section">💳 Payment Account</div>`;
+        html += row('Bank',           b.va_bank);
+        html += row('Account Number', `<span style="font-family:monospace;font-weight:800;letter-spacing:.06em;">${b.va_number}</span>`);
+        html += row('Account Name',   b.va_name);
+        html += row('VA Expires',     b.va_expires);
+        html += `
+            <div style="margin:10px 0 4px;">
+                <button onclick="copyVaNumber('${b.va_number}')"
+                    style="background:#4f46e5;color:#fff;border:none;border-radius:7px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;margin-right:6px;">
+                    Copy Account No.
+                </button>
+                <button onclick="shareVaWhatsApp('${b.reference}', '${b.customer_name}', '${b.customer_phone}', '${b.va_bank}', '${b.va_number}', '${b.va_name}', '${b.amount}')"
+                    style="background:#25d366;color:#fff;border:none;border-radius:7px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;">
+                    Share via WhatsApp
+                </button>
+            </div>`;
+    }
     // Mode-specific
     if (MODE === 'appointment') {
       html += `<div class="detail-section">Schedule</div>`;
@@ -599,6 +635,23 @@
     return `<div class="detail-row"><span class="detail-label">${label}</span><span class="detail-value">${value}</span></div>`;
   }
 
+    function copyVaNumber(num) {
+        navigator.clipboard.writeText(num);
+        alert('Account number copied!');
+    }
+
+    function shareVaWhatsApp(ref, name, phone, bank, acct, acctName, amount) {
+        const p   = (phone || '').replace(/\D/g,'');
+        const msg = encodeURIComponent(
+            `Hi ${name}, here are your payment details:\n\n` +
+            `🏦 Bank: ${bank}\n` +
+            `💳 Account: ${acct}\n` +
+            `👤 Name: ${acctName}\n` +
+            `💰 Amount: ${amount}\n\n` +
+            `Ref: ${ref}\nPlease pay within 30 minutes — the account is unique to your booking.`
+        );
+        window.open(p ? `https://wa.me/${p}?text=${msg}` : `https://wa.me/?text=${msg}`, '_blank');
+    }
   function closeDetail() {
     document.getElementById('detail-overlay').classList.remove('open');
     document.getElementById('detail-panel').classList.remove('open');

@@ -59,7 +59,7 @@ class EBulkSmsAlertService
         $phone = $this->formatPhone($phone);
 
         try {
-            $response = Http::timeout(10)->get('https://api.ebulksms.com/sendsms', [
+            $response = Http::get('https://api.ebulksms.com/sendsms', [
                 'username'    => $this->username,
                 'apikey'      => $this->apiKey,
                 'sender'      => $this->sender,

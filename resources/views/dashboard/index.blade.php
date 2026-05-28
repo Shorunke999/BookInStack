@@ -17,7 +17,7 @@
         <div class="stat-sub">This month</div>
     </div>
     <div class="stat-card">
-        <div class="stat-label">Total {{ $modeConfig['plural'] }}</div>
+        <div class="stat-label">Total {{ $modeConfig['plural'] ?? 'bookings' }}</div>
         <div class="stat-value">{{ number_format($stats['total_bookings']) }}</div>
         <div class="stat-sub">
             {{ number_format($stats['pending_bookings']) }} pending
@@ -124,8 +124,8 @@
                     <tr>
                         <td colspan="6" style="text-align:center; color:var(--muted); padding:40px; font-size:14px;">
                             No {{ strtolower($modeConfig['plural']) }} yet.
-                            <a href="{{ route('dashboard.integration') }}" style="color:var(--accent);">
-                                Set up your widget →
+                            <a href="{{ route('services.create') }}" style="color:var(--accent);">
+                                Set up your Service →
                             </a>
                         </td>
                     </tr>

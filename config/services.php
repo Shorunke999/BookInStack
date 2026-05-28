@@ -34,8 +34,14 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    'onboarding_provider' => 'paystack', // or 'anchor'
+    'anchor' => [
+        'secret_key'     => env('ANCHOR_SECRET_KEY'),
+        'webhook_secret' => env('ANCHOR_WEBHOOK_SECRET'),
+        'env'            => env('ANCHOR_ENV', 'sandbox'),
+    ],
     'paystack' => [
-        'secret_key' => env('SECRET_PAYSTACK_API_KEY', 'sk_test_6b3b2847914306dfbb5180c03849568d056f11b0'),
+        'secret_key' => env('SECRET_PAYSTACK_API_KEY', 'sk_test_d7aab465384daeb89636150f185697f194f8c01d'),
     ],
     'ebulksms' => [
         'username' => env('EBULKSMS_USERNAME', 'mybusiness'),

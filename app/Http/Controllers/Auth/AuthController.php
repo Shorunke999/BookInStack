@@ -47,7 +47,9 @@ class AuthController extends Controller
             return redirect()->route('verification.notice')
                 ->with('resend_email', $credentials['email']);
         }
-
+        if(Auth::user()->isStaff()) {
+            return redirect()->route('dashboard.bookings');
+        }
         return redirect()->intended(route('dashboard'));
     }
 
@@ -119,8 +121,10 @@ class AuthController extends Controller
         Auth::login($developer);
         $request->session()->regenerate();
 
-        return redirect()->route('dashboard.api-keys')
-            ->with('success', 'Email verified! Welcome to BookInStack.');
+        return redirect()->route('onboarding.index')
+            ->with('success', 'Email verified! Let\'s get you set up.');
+        // return redirect()->route('dashboard.api-keys')
+        //     ->with('success', 'Email verified! Welcome to BookInStack.');
     }
 
     public function verificationSend(Request $request): RedirectResponse
