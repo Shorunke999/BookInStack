@@ -1,9 +1,8 @@
 <?php
-
+use App\Http\Controllers\Dashboard\ExportController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\Dashboard\BookingCategoryController;
-use App\Http\Controllers\Dashboard\PaymentLinkController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Dashboard\StaffController;
 use App\Http\Controllers\DeveloperDomainController;
@@ -135,6 +134,10 @@ Route::middleware(['auth','onboarded'])->group(function () {
             ->name('dashboard.domains.store');
         Route::delete('/domains', [DeveloperDomainController::class, 'delete'])
             ->name('dashboard.domains.delete');
+
+        // Add this route inside your authenticated routes group
+        Route::get('/dashboard/bookings/export', [ExportController::class, 'exportBookings'])
+            ->name('bookings.export');
 
         // Staff management
         Route::get('/staff', [StaffController::class, 'index'])->name('staff.index');

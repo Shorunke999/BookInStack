@@ -4,6 +4,16 @@
 
 @section('content')
 
+<div class="flex justify-end items-center mb-12 gap-3">
+    <button onclick="toggleExportModal()" class="btn btn-outline btn-sm">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Export Bookings
+    </button>
+</div>
 {{-- ── Stat cards ──────────────────────────────────────────────────────────── --}}
 <div class="stat-grid" style="margin-bottom:24px;">
     <div class="stat-card">
@@ -135,4 +145,98 @@
     </div>
 </div>
 
+<!-- Export Modal -->
+<div id="exportModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; border-radius: 12px; max-width: 500px; width: 90%; padding: 24px;">
+        <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 16px;">Export Bookings</h3>
+
+        <form action="{{ route('bookings.export') }}" method="GET">
+            <div class="form-group">
+                <label>Date Range</label>
+                <select name="date_range" class="form-control" id="dateRangeSelect">
+                    <option value="all">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="yesterday">Yesterday</option>
+                    <option value="this_week">This Week</option>
+                    <option value="last_week">Last Week</option>
+                    <option value="this_month">This Month</option>
+                    <option value="last_month">Last Month</option>
+                    <option value="custom">Custom Range</option>
+                </select>
+            </div>
+
+            <div id="customRange" style="display: none;">
+                <div class="form-group">
+                    <label>From Date</label>
+                    <input type="date" name="from_date" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>To Date</label>
+                    <input type="date" name="to_date" class="form-control">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Status</label>
+                <select name="status" class="form-control">
+                    <option value="">All Statuses</option>
+                    <option value="paid">Paid</option>
+                    <option value="pending">Pending</option>
+                    <option value="failed">Failed</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+            </div>
+            @php
+                $categories = $service->bookingCategories()->orderBy('name')->get();
+            @endphp
+            <div class="form-group">
+                <label>Category</label>
+                <select name="category_id" class="form-control">
+                    <option value="">All Categories</option>
+                    @foreach($categories as $category)
+                        <option value="{{ $category->id }}">{{ $category->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>Include Metrics Summary</label>
+                <select name="include_metrics" class="form-control">
+                    <option value="yes">Yes (with separate metrics sheet)</option>
+                    <option value="no">No (bookings only)</option>
+                </select>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+                <button type="button" onclick="toggleExportModal()" class="btn btn-outline">Cancel</button>
+                <button type="submit" class="btn btn-primary">Download CSV</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @endsection
+@push('scripts')
+<script>
+function toggleExportModal() {
+    const modal = document.getElementById('exportModal');
+    if (modal.style.display === 'flex') {
+        modal.style.display = 'none';
+    } else {
+        modal.style.display = 'flex';
+    }
+}
+
+document.getElementById('dateRangeSelect').addEventListener('change', function() {
+    const customRange = document.getElementById('customRange');
+    customRange.style.display = this.value === 'custom' ? 'block' : 'none';
+});
+
+// Close modal when clicking outside
+document.getElementById('exportModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        this.style.display = 'none';
+    }
+});
+</script>
+@endpush
