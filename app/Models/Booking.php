@@ -22,6 +22,7 @@ class Booking extends Model
         'customer_phone',
         'metadata',
         'payment_status',
+        'booking_status',
         'paystack_reference',
         'paystack_access_code',
         'payment_url',

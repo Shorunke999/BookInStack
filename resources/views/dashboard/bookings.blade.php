@@ -190,15 +190,15 @@
                     </td>
                     <td>
                         @if($b->payment_status === 'paid')
-                            @if($b->attended)
-                                <span style="font-size:11px; font-weight:700; background:#f0fdf4; color:#15803d; padding:3px 8px; border-radius:10px;">✓ Attended</span>
-                            @else
-                                <form method="POST" action="{{ route('bookings.attend', $b->reference) }}" style="margin:0;">
-                                    @csrf
-                                    <input type="hidden" name="attended" value="1" />
-                                    <button type="submit" class="btn btn-outline btn-sm" style="font-size:11px; padding:3px 9px;">Mark</button>
-                                </form>
-                            @endif
+                            @if($b->booking_status == 'completed')
+                                @include('components.booking-status-badge', ['booking_status' => $b->booking_status])
+                            @elseif($b->booking_status == 'checked_in')
+                                    @include('components.booking-status-badge', ['booking_status' => $b->booking_status])
+
+                            @elseif($b->booking_status == 'active')
+                                    @include('components.booking-status-badge', ['booking_status' => $b->booking_status])
+                                    {{-- <span style="font-size:11px; font-weight:700; background:#f0fdf4; color:#15803d; padding:3px 8px; border-radius:10px;">Active</span> --}}
+                             @endif
                         @else
                             <span style="color:var(--border);">—</span>
                         @endif
@@ -209,11 +209,20 @@
                     </td>
 
                         <td>
-                            @if($b->attended)
-                                <form method="POST" action="{{ route('bookings.attend', $b->reference) }}" style="margin:0;">
-                                    @csrf <input type="hidden" name="attended" value="0" />
-                                    <button type="submit" class="btn btn-outline btn-sm" style="font-size:11px; padding:3px 9px; color:var(--muted);">Undo</button>
-                                </form>
+                             @if($b->payment_status === 'paid')
+                                @if($b->booking_status == 'checked_in')
+                                    <form method="POST" action="{{ route('bookings.attend', $b->reference) }}" style="margin:0;">
+                                        @csrf
+                                        <input type="hidden" name="booking_status" value="completed" />
+                                        <button type="submit" class="btn btn-outline btn-sm" style="font-size:11px; padding:3px 9px;">Completed</button>
+                                    </form>
+                                @elseif($b->booking_status == 'active')
+                                    <form method="POST" action="{{ route('bookings.attend', $b->reference) }}" style="margin:0;">
+                                        @csrf
+                                        <input type="hidden" name="booking_status" value="checked_in" />
+                                        <button type="submit" class="btn btn-outline btn-sm" style="font-size:11px; padding:3px 9px;">Check in</button>
+                                    </form>
+                                @endif
                             @endif
                             <a href="{{ route('bookings.show', $b->reference) }}"
                                 class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 10px;">
@@ -303,17 +312,15 @@
                     <td>@include('components.status-badge', ['payment_status' => $b->payment_status])</td>
                     <td>
                         @if($b->payment_status === 'paid')
-                            @if($b->attended)
-                                <span style="font-size:11px; font-weight:700; background:#f0fdf4; color:#15803d; padding:3px 8px; border-radius:10px;">✓ In</span>
-                                @if($b->attended_at)
-                                    <div style="font-size:11px; color:var(--muted);">{{ $b->attended_at->format('H:i') }}</div>
-                                @endif
-                            @else
-                                <form method="POST" action="{{ route('bookings.attend', $b->reference) }}" style="margin:0;">
-                                    @csrf <input type="hidden" name="attended" value="1" />
-                                    <button type="submit" class="btn btn-outline btn-sm" style="font-size:11px; padding:3px 9px;">Check In</button>
-                                </form>
-                            @endif
+                            @if($b->booking_status == 'completed')
+                                @include('components.booking-status-badge', ['booking_status' => $b->booking_status])
+                            @elseif($b->booking_status == 'checked_in')
+                                    @include('components.booking-status-badge', ['booking_status' => $b->booking_status])
+
+                            @elseif($b->booking_status == 'active')
+                                    @include('components.booking-status-badge', ['booking_status' => $b->booking_status])
+                                    {{-- <span style="font-size:11px; font-weight:700; background:#f0fdf4; color:#15803d; padding:3px 8px; border-radius:10px;">Active</span> --}}
+                             @endif
                         @else
                             <span style="color:var(--border);">—</span>
                         @endif
@@ -323,11 +330,20 @@
                         <div style="color:var(--muted);">{{ $b->created_at->format('H:i') }}</div>
                     </td>
                         <td>
-                            @if($b->attended)
-                                <form method="POST" action="{{ route('bookings.attend', $b->reference) }}" style="margin:0;">
-                                    @csrf <input type="hidden" name="attended" value="0" />
-                                    <button type="submit" class="btn btn-outline btn-sm" style="font-size:11px; padding:3px 9px; color:var(--muted);">Undo</button>
-                                </form>
+                             @if($b->payment_status === 'paid')
+                                @if($b->booking_status == 'checked_in')
+                                    <form method="POST" action="{{ route('bookings.attend', $b->reference) }}" style="margin:0;">
+                                        @csrf
+                                        <input type="hidden" name="booking_status" value="completed" />
+                                        <button type="submit" class="btn btn-outline btn-sm" style="font-size:11px; padding:3px 9px;">Completed</button>
+                                    </form>
+                                @elseif($b->booking_status == 'active')
+                                    <form method="POST" action="{{ route('bookings.attend', $b->reference) }}" style="margin:0;">
+                                        @csrf
+                                        <input type="hidden" name="booking_status" value="checked_in" />
+                                        <button type="submit" class="btn btn-outline btn-sm" style="font-size:11px; padding:3px 9px;">Check in</button>
+                                    </form>
+                                @endif
                             @endif
                             <a href="{{ route('bookings.show', $b->reference) }}"
                                 class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 10px;">
@@ -426,18 +442,16 @@
                     </td>
                     <td>@include('components.status-badge', ['payment_status' => $b->payment_status])</td>
                     <td>
-                        @if($b->payment_status === 'paid')
-                            @if($b->attended)
-                                <span style="font-size:11px; font-weight:700; background:#f0fdf4; color:#15803d; padding:3px 8px; border-radius:10px;">✓ Out</span>
-                                @if($b->attended_at)
-                                    <div style="font-size:11px; color:var(--muted);">{{ $b->attended_at->format('d M H:i') }}</div>
-                                @endif
-                            @else
-                                <form method="POST" action="{{ route('bookings.attend', $b->reference) }}" style="margin:0;">
-                                    @csrf <input type="hidden" name="attended" value="1" />
-                                    <button type="submit" class="btn btn-outline btn-sm" style="font-size:11px; padding:3px 9px;">Check Out</button>
-                                </form>
-                            @endif
+                         @if($b->payment_status === 'paid')
+                            @if($b->booking_status == 'completed')
+                                @include('components.booking-status-badge', ['booking_status' => $b->booking_status])
+                            @elseif($b->booking_status == 'checked_in')
+                                    @include('components.booking-status-badge', ['booking_status' => $b->booking_status])
+
+                            @elseif($b->booking_status == 'active')
+                                    @include('components.booking-status-badge', ['booking_status' => $b->booking_status])
+                                    {{-- <span style="font-size:11px; font-weight:700; background:#f0fdf4; color:#15803d; padding:3px 8px; border-radius:10px;">Active</span> --}}
+                             @endif
                         @else
                             <span style="color:var(--border);">—</span>
                         @endif
@@ -447,11 +461,20 @@
                         <div style="color:var(--muted);">{{ $b->created_at->format('H:i') }}</div>
                     </td>
                         <td>
-                            @if($b->attended)
-                                <form method="POST" action="{{ route('bookings.attend', $b->reference) }}" style="margin:0;">
-                                    @csrf <input type="hidden" name="attended" value="0" />
-                                    <button type="submit" class="btn btn-outline btn-sm" style="font-size:11px; padding:3px 9px; color:var(--muted);">Undo</button>
-                                </form>
+                             @if($b->payment_status === 'paid')
+                                @if($b->booking_status == 'checked_in')
+                                    <form method="POST" action="{{ route('bookings.attend', $b->reference) }}" style="margin:0;">
+                                        @csrf
+                                        <input type="hidden" name="booking_status" value="completed" />
+                                        <button type="submit" class="btn btn-outline btn-sm" style="font-size:11px; padding:3px 9px;">Completed</button>
+                                    </form>
+                                @elseif($b->booking_status == 'active')
+                                    <form method="POST" action="{{ route('bookings.attend', $b->reference) }}" style="margin:0;">
+                                        @csrf
+                                        <input type="hidden" name="booking_status" value="checked_in" />
+                                        <button type="submit" class="btn btn-outline btn-sm" style="font-size:11px; padding:3px 9px;">Check in</button>
+                                    </form>
+                                @endif
                             @endif
                             <a href="{{ route('bookings.show', $b->reference) }}"
                                 class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 10px;">

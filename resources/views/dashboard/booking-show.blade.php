@@ -14,18 +14,19 @@
         ← Back to Bookings
     </a>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        @if($booking->payment_status === 'paid' && !$booking->attended)
+
+        @if($booking->payment_status === 'paid' && $booking->booking_status === 'active')
             <form method="POST" action="{{ route('bookings.attend', $booking->reference) }}" style="margin:0;">
                 @csrf
-                <input type="hidden" name="attended" value="1" />
-                <button type="submit" class="btn btn-primary btn-sm">✓ Mark as Attended</button>
+                <input type="hidden" name="booking_status" value="checked_in" />
+                <button type="submit" class="btn btn-primary btn-sm"> Mark as Checked In</button>
             </form>
-        @elseif($booking->attended)
+        @elseif($booking->payment_status === 'paid' && $booking->booking_status === 'checked_in')
             <form method="POST" action="{{ route('bookings.attend', $booking->reference) }}" style="margin:0;"
                   onsubmit="return confirm('Undo attendance?')">
                 @csrf
-                <input type="hidden" name="attended" value="0" />
-                <button type="submit" class="btn btn-outline btn-sm" style="color:var(--muted);">Undo Attendance</button>
+                <input type="hidden" name="booking_status" value="completed" />
+                <button type="submit" class="btn btn-outline btn-sm" style="color:var(--muted);">  Mark as Completed</button>
             </form>
         @endif
     </div>

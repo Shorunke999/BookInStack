@@ -390,118 +390,226 @@ class BookingController extends Controller
      * Dashboard version — Sanctum auth
      * POST /dashboard/bookings/{reference}/attend
      */
-    public function dashboardMarkAttended(Request $request, string $reference)
-    {
-        $developer = $request->user()->effectiveDeveloper();
+   public function dashboardMarkAttended(Request $request, string $reference)
+{
+    $developer = $request->user()->effectiveDeveloper();
 
-        $booking = Booking::where('reference', $reference)
-            ->where('developer_id', $developer->id)
-            ->where('payment_status', 'paid')
-            ->with('category')
-            ->firstOrFail();
-        $data = $request->validate([
-            'attended' => 'required|boolean',
-            'note'     => 'nullable|string|max:500',
-        ]);
-        if(!$booking)
-        {
-            return $request->wantsJson()
-                    ? response()->json(['message' => 'Booking not found or not paid.'], 404)
-                    : back()->withErrors(['booking' => 'Booking not found or not paid.']);
-        }
+    $booking = Booking::where('reference', $reference)
+        ->where('developer_id', $developer->id)
+        ->where('payment_status', 'paid')
+        ->with('category')
+        ->first();
 
-        // ── Check-in window enforcement ───────────────────────────────────────
-        if ($data['attended'] && $booking->category) {
-            $cat = $booking->category;
-            $now = now();
-
-            // Date window — fixed dates on category
-            if ($cat->checkin_start_date && $now->toDateString() < $cat->checkin_start_date) {
-                $msg = 'Check-in not open yet. Opens ' . \Carbon\Carbon::parse($cat->checkin_start_date)->format('d M Y');
-                return $request->wantsJson()
-                    ? response()->json(['message' => $msg], 422)
-                    : back()->withErrors(['attended' => $msg]);
-            }
-
-            if ($cat->checkin_end_date && $now->toDateString() > $cat->checkin_end_date) {
-                $msg = 'Check-in window has closed.';
-                return $request->wantsJson()
-                    ? response()->json(['message' => $msg], 422)
-                    : back()->withErrors(['attended' => $msg]);
-            }
-
-            // Time window
-            if ($cat->checkin_start_time && $now->format('H:i:s') < $cat->checkin_start_time) {
-                $msg = 'Check-in opens at ' . \Carbon\Carbon::parse($cat->checkin_start_time)->format('g:i A');
-                return $request->wantsJson()
-                    ? response()->json(['message' => $msg], 422)
-                    : back()->withErrors(['attended' => $msg]);
-            }
-
-            if ($cat->checkin_end_time && $now->format('H:i:s') > $cat->checkin_end_time) {
-                $msg = 'Check-in closed at ' . \Carbon\Carbon::parse($cat->checkin_end_time)->format('g:i A');
-                return $request->wantsJson()
-                    ? response()->json(['message' => $msg], 422)
-                    : back()->withErrors(['attended' => $msg]);
-            }
-
-            // For reservation — only allow check-in on or after check_in date
-            if ($booking->check_in) {
-                $earliest = \Carbon\Carbon::parse($booking->check_in)
-                    ->subDays($cat->checkin_days_before ?? 0);
-                $latest   = \Carbon\Carbon::parse($booking->check_out ?? $booking->check_in)
-                    ->addDays($cat->checkin_days_after ?? 0);
-
-                if ($now->lt($earliest)) {
-                    $msg = 'Too early to check in. Earliest: ' . $earliest->format('d M Y');
-                    return $request->wantsJson()
-                        ? response()->json(['message' => $msg], 422)
-                        : back()->withErrors(['attended' => $msg]);
-                }
-
-                if ($now->gt($latest)) {
-                    $msg = 'Check-in window has passed.';
-                    return $request->wantsJson()
-                        ? response()->json(['message' => $msg], 422)
-                        : back()->withErrors(['attended' => $msg]);
-                }
-            }
-
-            // For appointment — only allow on the preferred_date ± days_before/after
-            if ($booking->preferred_date) {
-                $earliest = \Carbon\Carbon::parse($booking->preferred_date)
-                    ->subDays($cat->checkin_days_before ?? 0)->startOfDay();
-                $latest   = \Carbon\Carbon::parse($booking->preferred_date)
-                    ->addDays($cat->checkin_days_after ?? 0)->endOfDay();
-
-                if ($now->lt($earliest)) {
-                    $msg = 'Too early to mark attendance. Appointment is on ' . \Carbon\Carbon::parse($booking->preferred_date)->format('d M Y');
-                    return $request->wantsJson()
-                        ? response()->json(['message' => $msg], 422)
-                        : back()->withErrors(['attended' => $msg]);
-                }
-                if ($now->gt($latest)) {
-                    $msg = 'Attendance window has passed for this appointment.';
-                    return $request->wantsJson()
-                        ? response()->json(['message' => $msg], 422)
-                        : back()->withErrors(['attended' => $msg]);
-                }
-            }
-        }
-
-        // ── Mark attended ─────────────────────────────────────────────────────
-        if (!$booking->attended) {
-            $booking->update([
-                'attended'        => $data['attended'],
-                'attended_at'     => $data['attended'] ? now() : null,
-                'attendance_note' => $data['note'] ?? null,
+    if (!$booking) {
+        return $request->wantsJson()
+            ? response()->json([
+                'message' => 'Booking not found or payment not completed.'
+            ], 404)
+            : back()->withErrors([
+                'booking' => 'Booking not found or payment not completed.'
             ]);
+    }
+
+    $data = $request->validate([
+        'booking_status' => 'required|in:checked_in,completed,no_show',
+        'note'           => 'nullable|string|max:500',
+    ]);
+
+    $cat = $booking->category;
+    $now = now();
+
+    // ── Enforce attendance/check-in rules only for checked_in ──────────────
+    if ($data['booking_status'] === 'checked_in' && $cat) {
+
+        // ── Global category date window ─────────────────────────────────────
+        if (
+            $cat->checkin_start_date &&
+            $now->toDateString() < $cat->checkin_start_date
+        ) {
+
+            $msg = 'Check-in not open yet. Opens '
+                . \Carbon\Carbon::parse($cat->checkin_start_date)->format('d M Y');
+
+            return $request->wantsJson()
+                ? response()->json(['message' => $msg], 422)
+                : back()->withErrors(['booking_status' => $msg]);
         }
+
+        if (
+            $cat->checkin_end_date &&
+            $now->toDateString() > $cat->checkin_end_date
+        ) {
+
+            $msg = 'Check-in window has closed.';
+
+            return $request->wantsJson()
+                ? response()->json(['message' => $msg], 422)
+                : back()->withErrors(['booking_status' => $msg]);
+        }
+
+        // ── Global category time window ─────────────────────────────────────
+        if (
+            $cat->checkin_start_time &&
+            $now->format('H:i:s') < $cat->checkin_start_time
+        ) {
+
+            $msg = 'Check-in opens at '
+                . \Carbon\Carbon::parse($cat->checkin_start_time)->format('g:i A');
+
+            return $request->wantsJson()
+                ? response()->json(['message' => $msg], 422)
+                : back()->withErrors(['booking_status' => $msg]);
+        }
+
+        if (
+            $cat->checkin_end_time &&
+            $now->format('H:i:s') > $cat->checkin_end_time
+        ) {
+
+            $msg = 'Check-in closed at '
+                . \Carbon\Carbon::parse($cat->checkin_end_time)->format('g:i A');
+
+            return $request->wantsJson()
+                ? response()->json(['message' => $msg], 422)
+                : back()->withErrors(['booking_status' => $msg]);
+        }
+
+        // ── Reservation Mode ────────────────────────────────────────────────
+        if (
+            $booking->booking_mode === 'reservation' &&
+            $booking->check_in
+        ) {
+
+            $earliest = \Carbon\Carbon::parse($booking->check_in)
+                ->subDays($cat->checkin_days_before ?? 0)
+                ->startOfDay();
+
+            $latest = \Carbon\Carbon::parse(
+                    $booking->check_out ?? $booking->check_in
+                )
+                ->addDays($cat->checkin_days_after ?? 0)
+                ->endOfDay();
+
+            if ($now->lt($earliest)) {
+
+                $msg = 'Too early to check in. Earliest: '
+                    . $earliest->format('d M Y');
+
+                return $request->wantsJson()
+                    ? response()->json(['message' => $msg], 422)
+                    : back()->withErrors(['booking_status' => $msg]);
+            }
+
+            if ($now->gt($latest)) {
+
+                $msg = 'Check-in window has passed.';
+
+                return $request->wantsJson()
+                    ? response()->json(['message' => $msg], 422)
+                    : back()->withErrors(['booking_status' => $msg]);
+            }
+        }
+
+        // ── Appointment Mode ────────────────────────────────────────────────
+        if (
+            $booking->booking_mode === 'appointment' &&
+            $booking->preferred_date
+        ) {
+
+            $earliest = \Carbon\Carbon::parse($booking->preferred_date)
+                ->subDays($cat->checkin_days_before ?? 0)
+                ->startOfDay();
+
+            $latest = \Carbon\Carbon::parse($booking->preferred_date)
+                ->addDays($cat->checkin_days_after ?? 0)
+                ->endOfDay();
+
+            if ($now->lt($earliest)) {
+
+                $msg = 'Too early to check in. Appointment is on '
+                    . \Carbon\Carbon::parse($booking->preferred_date)
+                        ->format('d M Y');
+
+                return $request->wantsJson()
+                    ? response()->json(['message' => $msg], 422)
+                    : back()->withErrors(['booking_status' => $msg]);
+            }
+
+            if ($now->gt($latest)) {
+
+                $msg = 'Attendance window has passed for this appointment.';
+
+                return $request->wantsJson()
+                    ? response()->json(['message' => $msg], 422)
+                    : back()->withErrors(['booking_status' => $msg]);
+            }
+        }
+
+        // ── Ticket/Event Mode ───────────────────────────────────────────────
+        if (
+            $booking->booking_mode === 'ticket' &&
+            $booking->booking_status === 'checked_in'
+        ) {
+
+            $msg = 'This ticket has already been checked in.';
+
+            return $request->wantsJson()
+                ? response()->json(['message' => $msg], 422)
+                : back()->withErrors(['booking_status' => $msg]);
+        }
+    }
+
+    // ── Prevent invalid transitions ────────────────────────────────────────
+    if (in_array($booking->booking_status, [
+        'completed',
+        'cancelled',
+        'expired',
+        'no_show',
+    ])) {
+
+        $msg = 'This booking can no longer be updated.';
 
         return $request->wantsJson()
-            ? response()->json(['message' => 'Attendance updated.'], 200)
-            : back()->with('success', 'Attendance updated.');
+            ? response()->json(['message' => $msg], 422)
+            : back()->withErrors(['booking_status' => $msg]);
     }
+
+    // ── Update booking state ───────────────────────────────────────────────
+    $booking->update([
+
+        'booking_status' => $data['booking_status'],
+
+        'attended_at' => $data['booking_status'] === 'checked_in'
+            ? now()
+            : $booking->attended_at,
+
+        'attendance_note' => $data['note'] ?? $booking->attendance_note,
+    ]);
+
+    // ── Human readable success message ─────────────────────────────────────
+    $message = match ($data['booking_status']) {
+
+        'checked_in' => match ($booking->booking_mode) {
+            'reservation' => 'Guest checked in successfully.',
+            'appointment' => 'Appointment attendance confirmed.',
+            'ticket'      => 'Ticket validated successfully.',
+            default       => 'Booking checked in successfully.',
+        },
+
+        'completed' => match ($booking->booking_mode) {
+            'reservation' => 'Guest checked out successfully.',
+            default       => 'Booking marked as completed.',
+        },
+
+        'no_show' => 'Booking marked as no-show.',
+
+        default => 'Booking updated successfully.',
+    };
+
+    return $request->wantsJson()
+        ? response()->json(['message' => $message], 200)
+        : back()->with('success', $message);
+}
 
     /**
      * GET /booking-window/status
