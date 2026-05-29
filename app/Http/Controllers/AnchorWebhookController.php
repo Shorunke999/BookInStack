@@ -212,22 +212,22 @@ class AnchorWebhookController extends Controller
     private function handlePayin(array $payload, array $included): void
     {
         $payIn = collect($included)->firstWhere('type', 'PayIn');
-    
+
         if (! $payIn) {
             Log::error('payin.received: no PayIn in included', $payload);
             return;
         }
-    
+
         $amountKobo      = $payIn['attributes']['amount'];
         $sessionId       = $payIn['attributes']['sessionId'] ?? null;
         $payinReference  = $payIn['attributes']['reference'];  // this is YOUR booking reference from metadata
         $anchorCustomerId = $payIn['relationships']['customer']['data']['id'] ?? null;
-    
+
         // ── Match booking by virtual account reference (exact match) ──────────
         $booking = Booking::where('anchor_va_reference', $payinReference)
             ->orWhere('reference', $payinReference)       // fallback: direct reference match
             ->first();
-    
+
         if (! $booking) {
             Log::warning('payin.received: no booking matched', [
                 'payin_reference' => $payinReference,
@@ -235,12 +235,12 @@ class AnchorWebhookController extends Controller
             ]);
             return;
         }
-    
-        if ($booking->status === 'paid') {
+
+        if ($booking->payment_status === 'paid') {
             Log::info("Booking {$booking->reference} already paid — skipping.");
             return;
         }
-    
+
         // Sanity check: amount must match exactly
         $expectedKobo = (int) $booking->amount * 100;
         if ($amountKobo !== $expectedKobo) {
@@ -250,14 +250,14 @@ class AnchorWebhookController extends Controller
             ]);
             // Still mark paid but log the discrepancy — partial payment handling is up to you
         }
-    
+
         $onboarding = $booking->developer->onboarding;
         $developer =$booking->developer;
-    
+
         try {
             DB::transaction(function () use ($booking,$dveloper, $onboarding, $amountKobo, $payinReference, $sessionId) {
                 $booking->update([
-                    'status'            => 'paid',
+                    'payment_status'    => 'paid',
                     'anchor_payin_ref'  => $payinReference,
                     'anchor_session_id' => $sessionId,
                     'paid_at'           => now(),
@@ -276,19 +276,19 @@ class AnchorWebhookController extends Controller
                     'paid_at' => now(),
                 ]);
                 Log::info("Booking {$booking->reference} marked paid via Anchor Pay with Transfer");
-    
+
                 $this->initiateAutoPayout($onboarding, $booking->developer, $amountKobo, $payinReference);
             });
-    
+
             $this->sendConfirmation($booking->fresh(['developer']));
-    
+
         } catch (\Exception $e) {
             Log::error("Failed to process payin for {$booking->reference}", [
                 'error' => $e->getMessage(),
             ]);
         }
     }
- 
+
 
     /**
      * Auto NIP-transfer developer payout after deducting platform + NIP fees.

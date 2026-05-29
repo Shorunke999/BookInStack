@@ -58,8 +58,8 @@ class DashboardController extends Controller
             'monthly_revenue' => $developer->payments()->where('status', 'success')
                                     ->whereMonth('created_at', now()->month)->sum('developer_amount') / 100,
              'total_bookings'   => $service?->bookings()->count(),
-            'paid_bookings'    => $service?->bookings()->where('status', 'paid')->count(),
-            'pending_bookings' => $service?->bookings()->where('status', 'pending')->count(),
+            'paid_bookings'    => $service?->bookings()->where('payment_status', 'paid')->count(),
+            'pending_bookings' => $service?->bookings()->where('payment_status', 'pending')->count(),
             'attended'         => $service?->bookings()->where('attended', true)->count(),
 
         ];

@@ -14,7 +14,7 @@
         ← Back to Bookings
     </a>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        @if($booking->status === 'paid' && !$booking->attended)
+        @if($booking->payment_status === 'paid' && !$booking->attended)
             <form method="POST" action="{{ route('bookings.attend', $booking->reference) }}" style="margin:0;">
                 @csrf
                 <input type="hidden" name="attended" value="1" />
@@ -33,7 +33,7 @@
 
 @php
     $statusColors = ['pending'=>['#d97706','#fffbeb'],'paid'=>['#15803d','#f0fdf4'],'failed'=>['#dc2626','#fef2f2'],'cancelled'=>['#6b7280','#f3f4f6'],'expired'=>['#6b7280','#f3f4f6']];
-    [$statusColor, $statusBg] = $statusColors[$booking->status] ?? ['#6b7280','#f3f4f6'];
+    [$statusColor, $statusBg] = $statusColors[$booking->payment_status] ?? ['#6b7280','#f3f4f6'];
     $cfg = $developer->modeConfig();
     $mode = $developer->booking_mode;
 @endphp
@@ -58,7 +58,7 @@
                     </div>
                 </div>
                 <span style="font-size:13px;font-weight:700;padding:6px 16px;border-radius:20px;background:{{ $statusBg }};color:{{ $statusColor }};">
-                    {{ ucfirst($booking->status) }}
+                    {{ ucfirst($booking->payment_status) }}
                 </span>
             </div>
 
@@ -181,7 +181,7 @@
         </div>
 
         {{-- Attendance --}}
-        @if($booking->status === 'paid')
+        @if($booking->payment_status === 'paid')
         <div class="card">
             <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;">
                 {{ $cfg['attendance_label'] ?? 'Attendance' }}
@@ -269,7 +269,7 @@
         </div>
 
         {{-- QR Code (ticket mode) --}}
-        @if($mode === 'ticket' && $booking->status === 'paid')
+        @if($mode === 'ticket' && $booking->payment_status === 'paid')
         <div class="card" style="text-align:center;">
             <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;">QR Code</div>
             <div id="booking-qr" style="display:inline-block;padding:10px;border:1px solid var(--border);border-radius:10px;background:#fff;"></div>
@@ -277,7 +277,7 @@
         </div>
         @endif
 
-       @if($booking->status !== 'paid' && $booking->payment_link_token)
+       @if($booking->payment_status !== 'paid' && $booking->payment_link_token)
 
             @php
                 $wa = preg_replace('/\D/', '', $booking->customer_phone ?? '');
@@ -338,7 +338,7 @@
 @push('scripts')
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-@if($mode === 'ticket' && $booking->status === 'paid')
+@if($mode === 'ticket' && $booking->payment_status === 'paid')
   new QRCode(document.getElementById('booking-qr'), {
     text:         '{{ $booking->reference }}',
     width:        140,

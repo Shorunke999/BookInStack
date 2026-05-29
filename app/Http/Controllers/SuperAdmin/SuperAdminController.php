@@ -18,8 +18,8 @@ class SuperAdminController extends Controller
             'total_developers' => Developer::whereNull('owner_id')->where('role','admin')->count(),
             'active_developers'=> Developer::whereNull('owner_id')->where('status','active')->count(),
             'total_bookings'   => Booking::count(),
-            'paid_bookings'    => Booking::where('status','paid')->count(),
-            'total_revenue'    => Booking::where('status','paid')->sum('amount'), // kobo
+            'paid_bookings'    => Booking::where('payment_status','paid')->count(),
+            'total_revenue'    => Booking::where('payment_status','paid')->sum('amount'), // kobo
             'platform_revenue' => $this->calcPlatformRevenue(),
         ];
 
@@ -28,7 +28,7 @@ class SuperAdminController extends Controller
             ->latest()->limit(5)->get();
 
         $recentBookings = Booking::with('developer')
-            ->where('status','paid')
+            ->where('payment_status','paid')
             ->latest()->limit(10)->get();
 
         return view('superadmin.dashboard', compact('stats', 'recentDevelopers', 'recentBookings'));
@@ -41,7 +41,7 @@ class SuperAdminController extends Controller
         $query = Developer::whereNull('owner_id')
             ->where('role','admin')
             ->withCount('bookings')
-            ->withSum(['bookings as paid_amount' => fn($q) => $q->where('status','paid')], 'amount');
+            ->withSum(['bookings as paid_amount' => fn($q) => $q->where('payment_status','paid')], 'amount');
 
         if ($request->search) {
             $query->where(function($q) use ($request) {
@@ -51,8 +51,8 @@ class SuperAdminController extends Controller
             });
         }
 
-        if ($request->status) {
-            $query->where('status', $request->status);
+        if ($request->payment_status) {
+            $query->where('payment_status', $request->payment_status);
         }
 
         $developers = $query->latest()->paginate(25);
@@ -70,10 +70,10 @@ class SuperAdminController extends Controller
             ->findOrFail($id);
 
         $bookings = Booking::where('developer_id', $id)
-            ->where('status','paid')
+            ->where('payment_status','paid')
             ->latest()->limit(20)->get();
 
-        $totalPaid      = Booking::where('developer_id',$id)->where('status','paid')->sum('amount');
+        $totalPaid      = Booking::where('developer_id',$id)->where('payment_status','paid')->sum('amount');
         $platformEarned = (int) round($totalPaid * ($developer->platform_fee_percent / 100));
 
         return view('superadmin.developer-show', compact('developer','bookings','totalPaid','platformEarned'));
@@ -113,7 +113,7 @@ class SuperAdminController extends Controller
     public function bookings(Request $request)
     {
         $bookings = Booking::with('developer')
-            ->where('status','paid')
+            ->where('payment_status','paid')
             ->when($request->developer_id, fn($q) => $q->where('developer_id', $request->developer_id))
             ->latest()->paginate(30);
 
@@ -129,7 +129,7 @@ class SuperAdminController extends Controller
     {
         $developers = Developer::whereNull('owner_id')
             ->where('role','admin')
-            ->withSum(['bookings as paid_volume' => fn($q) => $q->where('status','paid')], 'amount')
+            ->withSum(['bookings as paid_volume' => fn($q) => $q->where('payment_status','paid')], 'amount')
             ->orderByDesc('paid_volume')
             ->get()
             ->map(function ($dev) {
@@ -154,7 +154,7 @@ class SuperAdminController extends Controller
     private function calcPlatformRevenue(): int
     {
         return Developer::whereNull('owner_id')->get()->sum(function ($dev) {
-            $paid = Booking::where('developer_id', $dev->id)->where('status','paid')->sum('amount');
+            $paid = Booking::where('developer_id', $dev->id)->where('payment_status','paid')->sum('amount');
             return (int) round($paid * ($dev->platform_fee_percent / 100));
         });
     }

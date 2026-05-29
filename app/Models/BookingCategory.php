@@ -124,7 +124,7 @@ class BookingCategory extends Model
 
     public function slotsBooked(): int
     {
-        $paid = $this->bookings()->where('status', 'paid')->where('attended', false);
+        $paid = $this->bookings()->where('payment_status', 'paid')->where('attended', false);
 
         if ($this->booking_mode === 'ticket') {
             return (int) $paid->selectRaw('COALESCE(SUM(adults + children), 0) as total')
@@ -136,7 +136,7 @@ class BookingCategory extends Model
    public function activeBookings(): int
     {
         $query = $this->bookings()
-            ->where('status', 'paid')
+            ->where('payment_status', 'paid')
             ->where('attended', false);
 
         if ($this->booking_mode === 'ticket') {

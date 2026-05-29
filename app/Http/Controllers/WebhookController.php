@@ -83,7 +83,7 @@ class WebhookController extends Controller
         }
 
         // Idempotency: skip if already processed
-        if ($booking->status === 'paid') {
+        if ($booking->payment_status === 'paid') {
             Log::info("Booking {$booking->reference} already marked as paid, skipping.");
 
             return;

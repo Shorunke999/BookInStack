@@ -21,7 +21,7 @@ class Booking extends Model
         'customer_name',
         'customer_phone',
         'metadata',
-        'status',
+        'payment_status',
         'paystack_reference',
         'paystack_access_code',
         'payment_url',
@@ -115,7 +115,7 @@ public function attendedBy() { return $this->belongsTo(\App\Models\Developer::cl
     public function markAsPaid(): void
     {
         $this->update([
-            'status' => 'paid',
+            'payment_status' => 'paid',
             'paid_at' => now(),
         ]);
     }

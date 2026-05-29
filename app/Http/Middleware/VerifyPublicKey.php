@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Developer;
+use App\Models\Service;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,7 +32,7 @@ class VerifyPublicKey
         }
 
         // Validate format
-        if (! str_starts_with($publicKey, 'pk_live_') && ! str_starts_with($publicKey, 'pk_test_')) {
+        if (! str_starts_with($publicKey, 'pk_svc_') && ! str_starts_with($publicKey, 'pk_test_')) {
             return response()->json([
                 'error' => 'invalid_key_format',
                 'message' => 'Invalid public key format.',
@@ -39,12 +40,11 @@ class VerifyPublicKey
         }
 
         // Find developer
-        $developer = Developer::where('public_key', $publicKey)
+        $service = Service::where('public_key', $publicKey)
             ->where('status', 'active')
-            ->where('bvn_verified', true)
             ->first();
 
-        if (! $developer) {
+        if (! $service) {
             return response()->json([
                 'error' => 'invalid_key',
                 'message' => 'Invalid or inactive API key.',
@@ -60,7 +60,7 @@ class VerifyPublicKey
         //     ], 403);
         // }
         // Attach developer to request for use in controllers
-        $request->merge(['developer' => $developer]);
+        $request->merge(['service' => $service]);
 
         return $next($request);
     }

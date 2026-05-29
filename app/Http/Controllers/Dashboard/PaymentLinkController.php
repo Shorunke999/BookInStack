@@ -63,7 +63,7 @@ class PaymentLinkController extends Controller
             'amount'         => $data['amount'],
             'description'    => $data['description'],
             'note'           => $data['note'] ?? null,
-            'status'         => 'pending',
+            'payment_status'         => 'pending',
             'expires_at'     => isset($data['expires_hours'])
                 ? now()->addHours((int) $data['expires_hours']) : null,
         ]);
@@ -93,7 +93,7 @@ class PaymentLinkController extends Controller
        $developer = $this->effectiveDeveloper(request());
         $payment = PaymentLink::where('token', $token)
             ->where('developer_id', $developer->id)
-            ->where('status', 'pending')->first();
+            ->where('payment_status', 'pending')->first();
         $payment->delete();
         return redirect()->route('payment-links.index')->with('success', 'Link cancelled.');
     }
@@ -105,8 +105,8 @@ class PaymentLinkController extends Controller
         $link = PaymentLink::where('token', $token)
             ->with('developer', 'category')->firstOrFail();
 
-        if ($link->isExpired() && $link->status === 'pending') {
-            $link->update(['status' => 'expired']);
+        if ($link->isExpired() && $link->payment_status === 'pending') {
+            $link->update(['payment_status' => 'expired']);
         }
 
         return view('pay.show', compact('link'));
@@ -195,7 +195,7 @@ class PaymentLinkController extends Controller
             'customer_email' => $link->customer_email ,
             'customer_name'  => $data['customer_name']  ?? $link->customer_name,
             'customer_phone' => $data['customer_phone'] ?? $link->customer_phone,
-            'status'         => 'pending',
+            'payment_status'         => 'pending',
             'adults'         => 1,
             'children'       => 0,
             'metadata'       => ['payment_link_token' => $token],

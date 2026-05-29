@@ -306,12 +306,12 @@
   <div class="email-body">
 
     {{-- Icon + heading --}}
-    <div class="confirm-icon">
+    {{-- <div class="confirm-icon">
       @if($modeConfig['mode'] === 'ticket') 🎟
       @elseif($modeConfig['mode'] === 'reservation') 🏨
       @else ✅
       @endif
-    </div>
+    </div> --}}
 
     <div class="confirm-title">{{ $modeConfig['success_message'] }}</div>
     <div class="confirm-sub">

@@ -81,7 +81,7 @@
                         <th class="hide-mobile">Date/Time</th>
                     @endif
                     <th>Amount</th>
-                    <th>Status</th>
+                    <th>Payment Status</th>
                 </tr>
             </thead>
             <tbody>
@@ -128,7 +128,7 @@
                         <td style="font-weight:600; font-size:13px; white-space:nowrap;">
                             ₦{{ number_format($booking->amount *($booking->nights() ?? 1) , 2) }}
                         </td>
-                        <td>@include('components.status-badge', ['status' => $booking->status])</td>
+                        <td>@include('components.status-badge', ['payment_status' => $booking->payment_status])</td>
                     </tr>
                 @empty
                     <tr>
@@ -177,9 +177,9 @@
             </div>
 
             <div class="form-group">
-                <label>Status</label>
-                <select name="status" class="form-control">
-                    <option value="">All Statuses</option>
+                <label>Payment Status</label>
+                <select name="payment_status" class="form-control">
+                    <option value="">All Payment Statuses</option>
                     <option value="paid">Paid</option>
                     <option value="pending">Pending</option>
                     <option value="failed">Failed</option>

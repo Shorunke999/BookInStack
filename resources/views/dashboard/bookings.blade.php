@@ -21,7 +21,7 @@
             {{ number_format($bookings->total()) }} {{ strtolower($modeConfig['plural']) }}
         </span>
 
-        @foreach($categories as $cat)
+        {{-- @foreach($categories as $cat)
             @if($cat->total_slots !== null)
                 @php $rem = $cat->slotsRemaining(); $pct = $cat->total_slots > 0 ? round(($cat->slotsBooked() / $cat->total_slots) * 100) : 0; @endphp
                 <span style="
@@ -29,7 +29,61 @@
                     {{ $rem === 0 ? 'background:#fef2f2;color:#ef4444;' : ($pct >= 80 ? 'background:#fffbeb;color:#d97706;' : 'background:#f0fdf4;color:#15803d;') }}
                 ">{{ $cat->name }}: {{ $rem === 0 ? 'Full' : $rem . ' slot' . ($rem === 1 ? '' : 's') . ' left' }}</span>
             @endif
-        @endforeach
+        @endforeach --}}
+        @foreach($categories as $cat)
+    @if($cat->total_slots !== null)
+
+        @php
+            $mode = $modeConfig['mode']; // ticket | reservation | appointment
+
+            $rem = $cat->slotsRemaining();
+            $pct = $cat->total_slots > 0
+                ? round(($cat->slotsBooked() / $cat->total_slots) * 100)
+                : 0;
+
+            // Default display
+            $label = $cat->name;
+
+            // MODE-AWARE DISPLAY
+            if ($mode === 'ticket') {
+                $text = $rem === 0
+                    ? 'Sold Out'
+                    : $rem . ' ticket' . ($rem === 1 ? '' : 's') . ' left';
+
+            } elseif ($mode === 'reservation') {
+
+                $text = 'Select dates to view availability';
+
+            } elseif ($mode === 'appointment') {
+
+                $text = 'Select date & time to check availability';
+
+            } else {
+                $text = $rem === 0
+                    ? 'Full'
+                    : $rem . ' slot' . ($rem === 1 ? '' : 's') . ' left';
+            }
+
+            // color logic (safe fallback)
+            $style = match(true) {
+                $mode === 'ticket' && $rem === 0 => 'background:#fef2f2;color:#ef4444;',
+                $mode === 'ticket' && $pct >= 80 => 'background:#fffbeb;color:#d97706;',
+                default => 'background:#f0fdf4;color:#15803d;',
+            };
+        @endphp
+
+        <span style="
+            font-size:12px;
+            font-weight:600;
+            padding:4px 11px;
+            border-radius:20px;
+            {{ $style }}
+        ">
+            {{ $label }}: {{ $text }}
+        </span>
+
+    @endif
+@endforeach
     </div>
 
     {{-- Right: create button --}}
@@ -42,9 +96,9 @@
 
     <div style="display:flex; gap:6px; flex-wrap:wrap;">
         @foreach(['all'=>'All','pending'=>'Pending','paid'=>'Paid','failed'=>'Failed'] as $v=>$l)
-            <a href="{{ route('dashboard.bookings', array_merge(request()->only('search','category'), ['status' => $v === 'all' ? null : $v])) }}"
+            <a href="{{ route('dashboard.bookings', array_merge(request()->only('search','category'), ['payment_status' => $v === 'all' ? null : $v])) }}"
                style="padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; text-decoration:none; white-space:nowrap;
-                      {{ request('status','all') === $v ? 'background:var(--accent);color:#fff;' : 'background:#fff;color:var(--muted);border:1px solid var(--border);' }}">
+                      {{ request('payment_status','all') === $v ? 'background:var(--accent);color:#fff;' : 'background:#fff;color:var(--muted);border:1px solid var(--border);' }}">
                 {{ $l }}
             </a>
         @endforeach
@@ -52,11 +106,11 @@
 
     @if($categories->isNotEmpty())
         <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            <a href="{{ route('dashboard.bookings', array_merge(request()->only('status','search'), ['category'=>null])) }}"
+            <a href="{{ route('dashboard.bookings', array_merge(request()->only('payment_status','search'), ['category'=>null])) }}"
                style="padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; text-decoration:none; white-space:nowrap;
                       {{ !request('category') ? 'background:var(--ink);color:#fff;' : 'background:#fff;color:var(--muted);border:1px solid var(--border);' }}">All</a>
             @foreach($categories as $cat)
-                <a href="{{ route('dashboard.bookings', array_merge(request()->only('status','search'), ['category'=>$cat->id])) }}"
+                <a href="{{ route('dashboard.bookings', array_merge(request()->only('payment_status','search'), ['category'=>$cat->id])) }}"
                    style="padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; text-decoration:none; white-space:nowrap;
                           {{ request('category') == $cat->id ? 'background:var(--ink);color:#fff;' : 'background:#fff;color:var(--muted);border:1px solid var(--border);' }}">
                     {{ $cat->name }}
@@ -67,7 +121,7 @@
 
     <form method="GET" action="{{ route('dashboard.bookings') }}"
           style="display:flex; gap:6px; flex:1; min-width:180px; max-width:280px; margin-left:auto;">
-        @foreach(request()->only('status','category') as $k=>$v)
+        @foreach(request()->only('payment_status','category') as $k=>$v)
             @if($v) <input type="hidden" name="{{ $k }}" value="{{ $v }}" /> @endif
         @endforeach
         <input type="text" name="search" value="{{ request('search') }}"
@@ -92,8 +146,8 @@
                     <th>Date</th>
                     <th>Time</th>
                     <th>Fee</th>
+                    <th>Payment Status</th>
                     <th>Status</th>
-                    <th>Attended</th>
                     <th class="hide-mobile">Booked On</th>
                     <th></th>
                 </tr>
@@ -126,16 +180,16 @@
                     <td style="font-weight:700; font-size:13px; white-space:nowrap;">
                         ₦{{ number_format($b->amount , 2) }}
                     </td>
-                    <td>@include('components.status-badge', ['status' => $b->status])
+                    <td>@include('components.status-badge', ['payment_status' => $b->payment_status])
                          {{-- Show VA badge if transfer pending and VA not expired --}}
-                        @if($b->status === 'pending' && $b->anchor_virtual_account_number && $b->anchor_va_expires_at?->isFuture())
+                        @if($b->payment_status === 'pending' && $b->anchor_virtual_account_number && $b->anchor_va_expires_at?->isFuture())
                             <div style="margin-top:4px;font-size:10px;font-weight:700;color:#7c3aed;background:#f5f3ff;padding:2px 7px;border-radius:10px;display:inline-block;">
                                 🏦 VA Active
                             </div>
                         @endif
                     </td>
                     <td>
-                        @if($b->status === 'paid')
+                        @if($b->payment_status === 'paid')
                             @if($b->attended)
                                 <span style="font-size:11px; font-weight:700; background:#f0fdf4; color:#15803d; padding:3px 8px; border-radius:10px;">✓ Attended</span>
                             @else
@@ -171,7 +225,7 @@
                 @empty
                 <tr><td colspan="10" style="text-align:center; padding:48px; color:var(--muted); font-size:14px;">
                     No appointments yet.
-                    @if(request()->hasAny(['search','status','category']))
+                    @if(request()->hasAny(['search','payment_status','category']))
                         <a href="{{ route('dashboard.bookings') }}" style="color:var(--accent);">Clear filters</a>
                     @endif
                 </td></tr>
@@ -202,9 +256,9 @@
                     <th>Ticket Type</th>
                     <th style="text-align:center;">Adults</th>
                     <th style="text-align:center;" class="hide-mobile">Children</th>
-                    <th style="text-align:right;">Total</th>
+                    <th style="text-align:right;">Total Amount</th>
+                    <th>Payment Status</th>
                     <th>Status</th>
-                    <th>Checked In</th>
                     <th class="hide-mobile">Booked On</th>
                      <th></th>
                 </tr>
@@ -246,9 +300,9 @@
                     <td style="text-align:right; font-weight:700; font-size:14px; white-space:nowrap;">
                         ₦{{ number_format($total , 2) }}
                     </td>
-                    <td>@include('components.status-badge', ['status' => $b->status])</td>
+                    <td>@include('components.status-badge', ['payment_status' => $b->payment_status])</td>
                     <td>
-                        @if($b->status === 'paid')
+                        @if($b->payment_status === 'paid')
                             @if($b->attended)
                                 <span style="font-size:11px; font-weight:700; background:#f0fdf4; color:#15803d; padding:3px 8px; border-radius:10px;">✓ In</span>
                                 @if($b->attended_at)
@@ -284,7 +338,7 @@
                 @empty
                 <tr><td colspan="10" style="text-align:center; padding:48px; color:var(--muted); font-size:14px;">
                     No tickets yet.
-                    @if(request()->hasAny(['search','status','category']))
+                    @if(request()->hasAny(['search','payment_status','category']))
                         <a href="{{ route('dashboard.bookings') }}" style="color:var(--accent);">Clear filters</a>
                     @endif
                 </td></tr>
@@ -316,9 +370,9 @@
                     <th>Check-in</th>
                     <th>Check-out</th>
                     <th style="text-align:center;" class="hide-mobile">Nights</th>
-                    <th style="text-align:right;">Total</th>
+                    <th style="text-align:right;">Total Amount</th>
+                    <th>Payment Status</th>
                     <th>Status</th>
-                    <th>Checked Out</th>
                     <th class="hide-mobile">Booked On</th>
                      <th></th>
                 </tr>
@@ -370,9 +424,9 @@
                     <td style="text-align:right; font-weight:700; font-size:14px; white-space:nowrap;">
                         ₦{{ number_format($total , 2) }}
                     </td>
-                    <td>@include('components.status-badge', ['status' => $b->status])</td>
+                    <td>@include('components.status-badge', ['payment_status' => $b->payment_status])</td>
                     <td>
-                        @if($b->status === 'paid')
+                        @if($b->payment_status === 'paid')
                             @if($b->attended)
                                 <span style="font-size:11px; font-weight:700; background:#f0fdf4; color:#15803d; padding:3px 8px; border-radius:10px;">✓ Out</span>
                                 @if($b->attended_at)
@@ -408,7 +462,7 @@
                 @empty
                 <tr><td colspan="11" style="text-align:center; padding:48px; color:var(--muted); font-size:14px;">
                     No reservations yet.
-                    @if(request()->hasAny(['search','status','category']))
+                    @if(request()->hasAny(['search','payment_status','category']))
                         <a href="{{ route('dashboard.bookings') }}" style="color:var(--accent);">Clear filters</a>
                     @endif
                 </td></tr>
@@ -486,7 +540,7 @@
       customer_phone: '{{ $b->customer_phone ?: '—' }}',
       category:       '{{ $b->category?->name ?? $b->description }}',
       amount:         '₦{{ number_format($b->amount , 2) }}',
-      status:         '{{ $b->status }}',
+      payment_status:         '{{ $b->payment_status }}',
       attended:       {{ $b->attended ? 'true' : 'false' }},
       attended_at:    '{{ $b->attended_at?->format('d M Y, H:i') ?? '' }}',
       attendance_note:'{{ $b->attendance_note ?? '' }}',
@@ -529,7 +583,7 @@
     const qrRef  = document.getElementById('dp-qr-ref');
 
     // Show QR for ticket always, for others only if paid
-    if (MODE === 'ticket' || b.status === 'paid') {
+    if (MODE === 'ticket' || b.payment_status === 'paid') {
       qrWrap.style.display = 'block';
       qrRef.textContent    = ref;
       qrImg.innerHTML      = '';
@@ -557,7 +611,7 @@
 
     // Status badge
     html += `<div style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 12px;border-radius:20px;background:${statusBg[b.status]||'#f3f4f6'};color:${statusColors[b.status]||'#374151'};margin-bottom:16px;">
-      ${b.status.toUpperCase()}
+      ${b.payment_status.toUpperCase()}
     </div>`;
 
     // Customer
@@ -616,9 +670,9 @@
     }
 
     // Attendance
-    if (b.status === 'paid') {
+    if (b.payment_status === 'paid') {
       html += `<div class="detail-section">{{ $modeConfig['attendance_label'] }}</div>`;
-      html += row('Status', b.attended
+      html += row('Payment Status', b.attended
         ? `<span style="color:#15803d;font-weight:700;">✓ Yes${b.attended_at ? ' · ' + b.attended_at : ''}</span>`
         : '<span style="color:#d97706;">Not yet</span>');
       if (b.attendance_note) html += row('Note', b.attendance_note);

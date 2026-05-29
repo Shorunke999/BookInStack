@@ -19,8 +19,9 @@ class BookingController extends Controller
     public function create(Request $request): JsonResponse
     {
         /** @var \App\Models\Developer $developer */
-        $developer = $request->get('developer');
-        $mode      = $developer->booking_mode;
+        $service = $request->get('service');
+        $developer = $service->developer();
+        $mode      = $service->booking_mode;
 
         // ── Validation ─────────────────────────────────────────────────────────
         $rules = [
@@ -55,7 +56,7 @@ class BookingController extends Controller
 
         if (!empty($data['category_id'])) {
             $category = \App\Models\BookingCategory::where('id', $data['category_id'])
-                ->where('developer_id', $developer->id)
+                ->where('service_id', $service->id)
                 ->where('booking_mode', $mode)
                 ->where('status', 'active')
                 ->first();
@@ -79,10 +80,12 @@ class BookingController extends Controller
         if (!$description) {
             return response()->json(['message' => 'description is required when no category is set.'], 422);
         }
-
+        do { $token = Str::random(12); }
+        while (Booking::where('payment_link_token', $token)->exists());
         // ── Build base payload ─────────────────────────────────────────────────
         $payload = [
-            'developer_id'   => $developer->id,
+            'service_id' => $service->id,
+            'developer_id'   => $service->developer->id,
             'category_id'    => $category?->id,
             'reference'      => 'BKG-' . strtoupper(\Illuminate\Support\Str::random(12)),
             'amount'         => $amount,
@@ -91,12 +94,14 @@ class BookingController extends Controller
             'customer_email' => $data['customer_email'],
             'customer_name'  => $data['customer_name']  ?? null,
             'customer_phone' => $data['customer_phone'] ?? null,
-            'status'         => 'pending',
+            'payment_status' => 'pending',
+            'booking_status' => 'active',
             'metadata'       => $data['metadata'] ?? null,
             'adults'         => $data['adults']   ?? 1,
             'children'       => $data['children'] ?? 0,
             'booked_via'   => 'widget',        // always widget for SDK bookings
-            'booked_by_id' => null
+            'booked_by_id' => null,
+            'payment_link_token' => $token
         ];
 
         if ($mode === 'reservation') {
@@ -127,7 +132,7 @@ class BookingController extends Controller
                                             ->first();
                     if($hasCurrentBooking)
                     {
-                        if($hasCurrentBooking->status = 'paid')
+                        if($hasCurrentBooking->payment_status == 'paid')
                         {
                              throw new \Exception('TICKET SOLD TO THIS CUSTOMER EMAIL ALREADY!');
                         }
@@ -137,9 +142,9 @@ class BookingController extends Controller
                         // Count paid + non-expired pending only
                         $sold = Booking::where('category_id', $cat->id)
                             ->where(function ($q) {
-                                $q->where('status', 'paid')
+                                $q->where('payment_status', 'paid')
                                 ->orWhere(function ($q2) {
-                                    $q2->where('status', 'pending')
+                                    $q2->where('payment_status', 'pending')
                                         ->where(function ($q3) {
                                             $q3->whereNull('booking_expires_at')
                                                 ->orWhere('booking_expires_at', '>', now());
@@ -169,7 +174,7 @@ class BookingController extends Controller
                         \App\Models\BookingCategory::lockForUpdate()->find($category->id);
 
                         $overlapping = Booking::where('category_id', $category->id)
-                            ->where('status', 'paid')
+                            ->where('payment_status', 'paid')
                             ->where('check_in',  '<', $requestedOut)
                             ->where('check_out', '>', $requestedIn)
                             ->count();
@@ -183,7 +188,28 @@ class BookingController extends Controller
 
                     return Booking::create($payload);
                 }),
+                // ── APPOINTMENT: prevent duplicate date/time bookings ───────────────
+                'appointment' => DB::transaction(function () use ($category, $payload) {
 
+                    if (
+                        !empty($payload['preferred_date']) &&
+                        !empty($payload['preferred_time'])
+                    ) {
+                        $exists = Booking::where('service_id', $payload['service_id'])
+                            ->where('category_id', $category->id)
+                            ->whereDate('preferred_date', $payload['preferred_date'])
+                            ->where('preferred_time', $payload['preferred_time'])
+                            ->where('payment_status', 'paid')
+                            ->exists();
+
+                        if ($exists) {
+                            throw new \Exception(
+                                'Sorry, this appointment time is already booked.|TIME_SLOT_FILLED'
+                            );
+                        }
+                    }
+                    return Booking::create($payload);
+                }),
                 // ── APPOINTMENT + default: simple create ──────────────────────
                 default => Booking::create($payload),
             };
@@ -196,6 +222,7 @@ class BookingController extends Controller
             $status = match ($error) {
                 'SOLD_OUT'          => 422,
                 'DATES_UNAVAILABLE' => 422,
+                'TIME_SLOT_FILLED'  => 422,
                 default             => 500,
             };
 
@@ -220,60 +247,60 @@ class BookingController extends Controller
      * GET /bookings
      * List bookings for the authenticated developer (public key auth).
      */
-    public function list(Request $request): JsonResponse
-    {
-        $developer = $request->get('developer');
+    // public function list(Request $request): JsonResponse
+    // {
+    //     $developer = $request->get('developer');
 
-        $bookings = Booking::where('developer_id', $developer->id)
-            ->select(['id', 'reference', 'amount', 'description', 'customer_email', 'status', 'created_at', 'paid_at'])
-            ->latest()
-            ->paginate(20);
+    //     $bookings = Booking::where('developer_id', $developer->id)
+    //         ->select(['id', 'reference', 'amount', 'description', 'customer_email', 'status', 'created_at', 'paid_at'])
+    //         ->latest()
+    //         ->paginate(20);
 
-        return response()->json($bookings);
-    }
+    //     return response()->json($bookings);
+    // }
 
     /**
      * GET /bookings/{reference}
      */
-    public function show(Request $request, string $reference): JsonResponse
-    {
-        $developer = $request->get('developer');
+    // public function show(Request $request, string $reference): JsonResponse
+    // {
+    //     $developer = $request->get('developer');
 
-        $booking = Booking::where('reference', $reference)
-            ->where('developer_id', $developer->id)
-            ->with('payment')
-            ->firstOrFail();
+    //     $booking = Booking::where('reference', $reference)
+    //         ->where('developer_id', $developer->id)
+    //         ->with('payment')
+    //         ->firstOrFail();
 
-        return response()->json(['booking' => $booking]);
-    }
+    //     return response()->json(['booking' => $booking]);
+    // }
 
     /**
      * GET /dashboard/bookings
      * Dashboard view — authenticated via Sanctum token.
      */
-    public function dashboardList(Request $request): JsonResponse
-    {
-        $developer = $request->user();
+    // public function dashboardList(Request $request): JsonResponse
+    // {
+    //     $developer = $request->user();
 
-        $query = Booking::where('developer_id', $developer->id);
+    //     $query = Booking::where('developer_id', $developer->id);
 
-        // Filters
-        if ($request->status) {
-            $query->where('status', $request->status);
-        }
+    //     // Filters
+    //     if ($request->status) {
+    //         $query->where('status', $request->status);
+    //     }
 
-        if ($request->search) {
-            $query->where(function ($q) use ($request) {
-                $q->where('reference', 'like', "%{$request->search}%")
-                    ->orWhere('customer_email', 'like', "%{$request->search}%")
-                    ->orWhere('description', 'like', "%{$request->search}%");
-            });
-        }
+    //     if ($request->search) {
+    //         $query->where(function ($q) use ($request) {
+    //             $q->where('reference', 'like', "%{$request->search}%")
+    //                 ->orWhere('customer_email', 'like', "%{$request->search}%")
+    //                 ->orWhere('description', 'like', "%{$request->search}%");
+    //         });
+    //     }
 
-        $bookings = $query->latest()->paginate(20);
+    //     $bookings = $query->latest()->paginate(20);
 
-        return response()->json($bookings);
-    }
+    //     return response()->json($bookings);
+    // }
 
       /**
      * GET /booking-window/status
@@ -282,20 +309,21 @@ class BookingController extends Controller
     public function getBookingWindowStatus(Request $request): JsonResponse
     {
         /** @var \App\Models\Developer $developer */
-        $developer  = $request->get('developer');
-        $mode       = $developer->booking_mode;
-        $modeConfig = $developer->modeConfig();
+        $service  = $request->get('service');
+        $mode       = $service->booking_mode;
+        $modeConfig = $service->modeConfig();
 
         // ── Booking window check ───────────────────────────────────────────────
         $open   = true;
         $reason = null;
 
-        if ($developer->enable_booking_window && $developer->booking_window) {
-            $window    = $developer->booking_window;
+        if ($service->enable_booking_window && $service->booking_window) {
+
+            $window    = $service->booking_window;
             $now       = now();
             $dayName   = strtolower($now->format('l'));
             $time      = $now->format('H:i');
-            $openDays  = $window['days']       ?? [];
+            $openDays  = $window['days']  ?? [];
             $openFrom  = $window['open_time']  ?? '00:00';
             $openUntil = $window['close_time'] ?? '23:59';
 
@@ -309,7 +337,7 @@ class BookingController extends Controller
         }
 
         // ── Catalog ────────────────────────────────────────────────────────────
-        $catalog = $developer->bookingCategories()
+        $catalog = $service->bookingCategories()
             ->forMode($mode)
             ->active()
             ->orderBy('sort_order')
@@ -320,43 +348,43 @@ class BookingController extends Controller
             'open'         => $open,
             'reason'       => $reason,
             'booking_mode' => $mode,
-            'enable_negotiate' => $developer->enable_negotiate ?? false,
-            'whatsapp_number'  => $developer->whatsapp_number ?? '',
+            'enable_negotiate' => $service->enable_negotiate ?? false,
+            'whatsapp_number'  => $service->whatsapp_number ?? '',
             'catalog'      => $catalog,
-            'widget_config'    => $developer->widget_config ?? (object)[],
-            'reservation_unit' => $developer->reservation_unit ?? null
+            'widget_config'    => $service->widget_config ?? (object)[],
+            'reservation_unit' => $service->reservation_unit ?? null
         ]);
     }
 
     /**
      * POST /bookings/{reference}/attend
      */
-    public function markAttended(Request $request, string $reference): JsonResponse
-    {
-        $developer = $request->get('developer');
+    // public function markAttended(Request $request, string $reference): JsonResponse
+    // {
+    //     $developer = $request->get('developer');
 
-        $booking = Booking::where('reference', $reference)
-            ->where('developer_id', $developer->id)
-            ->where('status', 'paid')   // can only mark paid bookings
-            ->firstOrFail();
+    //     $booking = Booking::where('reference', $reference)
+    //         ->where('developer_id', $developer->id)
+    //         ->where('payment_status', 'paid')   // can only mark paid bookings
+    //         ->firstOrFail();
 
-        $data = $request->validate([
-            'attended' => 'required|boolean',
-            'note' => 'nullable|string|max:500',
-        ]);
+    //     $data = $request->validate([
+    //         'attended' => 'required|boolean',
+    //         'note' => 'nullable|string|max:500',
+    //     ]);
 
-        $booking->update([
-            'attended' => $data['attended'],
-            'attended_at' => $data['attended'] ? now() : null,
-            'attended_by_id'  => auth()->id(),
-            'attendance_note' => $data['note'] ?? null,
-        ]);
+    //     $booking->update([
+    //         'attended' => $data['attended'],
+    //         'attended_at' => $data['attended'] ? now() : null,
+    //         'attended_by_id'  => auth()->id(),
+    //         'attendance_note' => $data['note'] ?? null,
+    //     ]);
 
-        return response()->json([
-            'message' => $data['attended'] ? 'Marked as attended' : 'Marked as not attended',
-            'booking' => $booking->fresh(),
-        ]);
-    }
+    //     return response()->json([
+    //         'message' => $data['attended'] ? 'Marked as attended' : 'Marked as not attended',
+    //         'booking' => $booking->fresh(),
+    //     ]);
+    // }
 
     /**
      * Dashboard version — Sanctum auth
@@ -368,14 +396,19 @@ class BookingController extends Controller
 
         $booking = Booking::where('reference', $reference)
             ->where('developer_id', $developer->id)
-            ->where('status', 'paid')
+            ->where('payment_status', 'paid')
             ->with('category')
             ->firstOrFail();
-
         $data = $request->validate([
             'attended' => 'required|boolean',
             'note'     => 'nullable|string|max:500',
         ]);
+        if(!$booking)
+        {
+            return $request->wantsJson()
+                    ? response()->json(['message' => 'Booking not found or not paid.'], 404)
+                    : back()->withErrors(['booking' => 'Booking not found or not paid.']);
+        }
 
         // ── Check-in window enforcement ───────────────────────────────────────
         if ($data['attended'] && $booking->category) {

@@ -12,6 +12,7 @@ use App\Services\AnchorService;
 use App\Services\PaystackService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -66,13 +67,11 @@ class BookingController extends Controller
         $data = $request->validate($rules);
         $cat = BookingCategory::find($data['category_id']);
 
-        if ($cat && $cat->slotsRemaining() <= 0) {
-            return redirect()->back()->with([
-                'status' => 'error',
-                'message' => 'Slot filled',
-                'flash' => 'That slot is filled. Please choose another.'
-            ]);
-        }
+        // if ($cat && $cat->slotsRemaining() <= 0) {
+        //     return redirect()->back()->with([
+        //        'error' => 'Sorry, that slot is filled. Please choose another.'
+        //     ]);
+        // }
         // Build booking payload
         $payload = [
             'developer_id'   => $effectiveDeveloper->id,
@@ -83,7 +82,7 @@ class BookingController extends Controller
             'customer_name'  => $data['customer_name'],
             'customer_email' => $data['customer_email'],
             'customer_phone' => $data['customer_phone'] ?? null,
-            'status'         => 'pending',
+            'payment_status'         => 'pending',
             'booked_via'     => 'dashboard',
             'payment_method' => $data['payment_method'],
             'booked_by'      => $request->user()->id,
@@ -103,9 +102,133 @@ class BookingController extends Controller
             $payload['preferred_date'] = $data['preferred_date'] ?? null;
             $payload['preferred_time'] = $data['preferred_time'] ?? null;
         }
-        $booking = Booking::create($payload);
+        //$booking = Booking::create($payload);
+        try {
+            $booking = match ($mode) {
+                // ── TICKET: atomic slot check + 15-min hold ────────────────────
+                'ticket' => DB::transaction(function () use ($cat, $payload) {
+                    if (!$cat) {
+                        // No cat — no slot limit, just create
+                        return Booking::create($payload);
+                    }
 
-        // ── Payment method branch ─────────────────────────────────────────────
+                    // Lock this cat row — serialises concurrent requests
+                    $cat = \App\Models\BookingCategory::lockForUpdate()->find($cat->id);
+                    $hasCurrentBooking = Booking::where('category_id', $cat->id)
+                                            ->where('customer_email',$payload['customer_email'])
+                                            ->first();
+                    if($hasCurrentBooking)
+                    {
+                        if($hasCurrentBooking->payment_status == 'paid')
+                        {
+                            throw new \Exception('TICKET SOLD TO THIS CUSTOMER EMAIL ALREADY!');
+                        }
+                        return $hasCurrentBooking;
+                    }
+                    if ($cat->total_slots !== null) {
+                        // Count paid + non-expired pending only
+                        $sold = Booking::where('category_id', $cat->id)
+                            ->where(function ($q) {
+                                $q->where('payment_status', 'paid')
+                                ->orWhere(function ($q2) {
+                                    $q2->where('payment_status', 'pending')
+                                        ->where(function ($q3) {
+                                            $q3->whereNull('booking_expires_at')
+                                                ->orWhere('booking_expires_at', '>', now());
+                                        });
+                                });
+                            })
+                            ->count();
+
+                        if ($sold >= $cat->total_slots) {
+                            throw new \Exception('SOLD_OUT');
+                        }
+                    }
+
+                    // Set 15-minute seat hold — expires if not paid
+                    $payload['booking_expires_at'] = now()->addMinutes(15);
+
+                    return Booking::create($payload);
+                }),
+
+                // ── RESERVATION: date-range overlap check ──────────────────────
+                'reservation' => DB::transaction(function () use ($cat, $payload, $data) {
+
+                    if ($cat) {
+                        $requestedIn  = \Carbon\Carbon::parse($data['check_in']);
+                        $requestedOut = \Carbon\Carbon::parse($data['check_out']);
+
+                        // Lock category row
+                        \App\Models\BookingCategory::lockForUpdate()->find($cat->id);
+
+                        $overlapping = Booking::where('category_id', $cat->id)
+                            ->where('payment_status', 'paid')
+                            ->where('check_in',  '<', $requestedOut)
+                            ->where('check_out', '>', $requestedIn)
+                            ->count();
+
+                        if ($cat->total_slots !== null && $overlapping >= $cat->total_slots) {
+                            throw new \Exception(
+                                "Sorry, {$cat->name} is fully booked for your selected dates.|DATES_UNAVAILABLE"
+                            );
+                        }
+                    }
+
+                    return Booking::create($payload);
+                }),
+                // ── APPOINTMENT: prevent duplicate date/time bookings ───────────────
+                'appointment' => DB::transaction(function () use ($cat, $payload) {
+
+                    if (
+                        !empty($payload['preferred_date']) &&
+                        !empty($payload['preferred_time'])
+                    ) {
+                        $exists = Booking::where('service_id', $payload['service_id'])
+                            ->where('category_id', $cat->id)
+                            ->whereDate('preferred_date', $payload['preferred_date'])
+                            ->where('preferred_time', $payload['preferred_time'])
+                            ->where('payment_status', 'paid')
+                            ->exists();
+
+                        if ($exists) {
+                            throw new \Exception(
+                                'Sorry, this appointment time is already booked.|TIME_SLOT_FILLED'
+                            );
+                        }
+                    }
+                    return Booking::create($payload);
+                }),
+                // ── APPOINTMENT + default: simple create ──────────────────────
+                default => Booking::create($payload),
+            };
+        } catch (\Exception $e) {
+            $parts   = explode('|', $e->getMessage(), 2);
+            $message = $parts[0];
+            $error   = $parts[1] ?? 'BOOKING_FAILED';
+
+            $status = match ($error) {
+                'SOLD_OUT'          => 422,
+                'DATES_UNAVAILABLE' => 422,
+                'TIME_SLOT_FILLED'  => 422,
+                default             => 500,
+            };
+
+            $response = ['message' => $message === 'SOLD_OUT'
+                ? 'Sorry, this ticket type is sold out.'
+                : $message
+            ];
+
+            if (isset($parts[1])) {
+                $response['error'] = $error;
+            }
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', $response['message']);
+        }
+
+                // ── Payment method branch ─────────────────────────────────────────────
 
         if ($data['payment_method'] === 'online') {
             do { $token = Str::random(12); }
@@ -200,7 +323,7 @@ class BookingController extends Controller
             $split = $this->paystack->calculateSplit((int) $amountKobo,$booking->developer);
             $platformFeeKobo    = $split['platform_fee'];
             $paystackFeeKobo    = $split['paystack_fee'];
-            $transactionCharge  = $platformFeeKobo + $paystackFeeKobo;
+            $transactionCharge  = max($platformFeeKobo, $paystackFeeKobo);
 
             $tx = $this->paystack->initializeTransaction([
                 'customer_email'     => $booking->customer_email,
@@ -244,7 +367,7 @@ class BookingController extends Controller
 
         $booking = Booking::where('reference', $reference)
             ->where('developer_id', $developer->id)
-            ->where('status', 'pending')
+            ->where('payment_status', 'pending')
             ->firstOrFail();
 
         return $this->initializeTransferPayment($booking, $developer);
@@ -300,7 +423,7 @@ class BookingController extends Controller
             ->firstOrFail();
 
         abort_if(
-            $booking->status === 'paid',
+            $booking->payment_status === 'paid',
             403,
             'This booking has already been paid.'
         );
@@ -314,7 +437,7 @@ class BookingController extends Controller
             $booking = Booking::where('payment_link_token', $token)
                 ->with('developer')
                 ->firstOrFail();
-            if ($booking->status === 'paid') {
+            if ($booking->payment_status === 'paid') {
                 return redirect()->back()->with('error', 'Payment already completed for this booking.');
             }
 

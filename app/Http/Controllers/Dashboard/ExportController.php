@@ -135,10 +135,10 @@ class ExportController extends Controller
 
     private function calculateMetrics($bookings, $developer, $activeService)
     {
-        $totalRevenue = $bookings->where('status', 'paid')->sum('amount');
-        $paidBookings = $bookings->where('status', 'paid');
-        $pendingBookings = $bookings->where('status', 'pending');
-        $cancelledBookings = $bookings->where('status', 'cancelled');
+        $totalRevenue = $bookings->where('payment_status', 'paid')->sum('amount');
+        $paidBookings = $bookings->where('payment_status', 'paid');
+        $pendingBookings = $bookings->where('payment_status', 'pending');
+        $cancelledBookings = $bookings->where('payment_status', 'cancelled');
 
         $averageOrderValue = $paidBookings->count() > 0
             ? $totalRevenue / $paidBookings->count()
@@ -156,7 +156,7 @@ class ExportController extends Controller
             ->map(fn($group) => [
                 'name' => $group->first()->category?->name ?? 'Uncategorized',
                 'count' => $group->count(),
-                'revenue' => $group->where('status', 'paid')->sum('amount'),
+                'revenue' => $group->where('payment_status', 'paid')->sum('amount'),
             ])
             ->sortByDesc('revenue')
             ->take(5);
@@ -203,11 +203,11 @@ class ExportController extends Controller
             ],
             'modes' => [
                 'ticket_count' => $byMode['ticket']->count(),
-                'ticket_revenue' => $byMode['ticket']->where('status', 'paid')->sum('amount'),
+                'ticket_revenue' => $byMode['ticket']->where('payment_status', 'paid')->sum('amount'),
                 'reservation_count' => $byMode['reservation']->count(),
-                'reservation_revenue' => $byMode['reservation']->where('status', 'paid')->sum('amount'),
+                'reservation_revenue' => $byMode['reservation']->where('payment_status', 'paid')->sum('amount'),
                 'appointment_count' => $byMode['appointment']->count(),
-                'appointment_revenue' => $byMode['appointment']->where('status', 'paid')->sum('amount'),
+                'appointment_revenue' => $byMode['appointment']->where('payment_status', 'paid')->sum('amount'),
             ],
             'attendance' => [
                 'attended_bookings' => $attendedBookings->count(),
