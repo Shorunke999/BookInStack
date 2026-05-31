@@ -187,7 +187,7 @@
                 </select>
             </div>
             @php
-                $categories = $service->bookingCategories()->orderBy('name')->get() ?? collect();
+                $categories = $service?->bookingCategories()->orderBy('name')->get() ?? collect();
             @endphp
             @if($categories->isNotEmpty())
                 <div class="form-group">
