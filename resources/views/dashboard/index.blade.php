@@ -187,17 +187,20 @@
                 </select>
             </div>
             @php
-                $categories = $service->bookingCategories()->orderBy('name')->get();
+                $categories = $service->bookingCategories()->orderBy('name')->get() ?? collect();
             @endphp
-            <div class="form-group">
-                <label>Category</label>
-                <select name="category_id" class="form-control">
-                    <option value="">All Categories</option>
-                    @foreach($categories as $category)
-                        <option value="{{ $category->id }}">{{ $category->name }}</option>
-                    @endforeach
-                </select>
-            </div>
+            @if($categories->isNotEmpty())
+                <div class="form-group">
+                    <label>Category</label>
+                    <select name="category_id" class="form-control">
+                        <option value="">All Categories</option>
+                        @foreach($categories as $category)
+                            <option value="{{ $category->id }}">{{ $category->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            @endif
+
 
             <div class="form-group" style="margin-bottom: 0;">
                 <label>Include Metrics Summary</label>
